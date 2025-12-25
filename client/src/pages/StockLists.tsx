@@ -87,7 +87,7 @@ export default function StockLists() {
                     <TableHead>Price</TableHead>
                     <TableHead>Volume</TableHead>
                     <TableHead className="text-right">Change</TableHead>
-                  </TableHeader>
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
                   {lowVolume.map((stock) => (
