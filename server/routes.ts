@@ -22,9 +22,9 @@ export async function registerRoutes(
 
       // Generate analysis using OpenAI
       const prompt = `
-Act as a professional Stock Market Analyst for the Indian and global markets.
-Analyze the stock: ${symbol}
-Market: Indian Stock Market (NSE/BSE) and global market references if applicable.
+Act as a professional Stock Market and Forex Analyst.
+Analyze the asset: ${symbol}
+Market: Indian Stock Market (NSE/BSE) and Forex markets.
 
 Provide a detailed analysis using NUMBERS, FIGURES, and patterns suitable for GRAPHICAL representation.
 
@@ -34,18 +34,19 @@ Structure the response as follows:
 2. Current Market Price & Market Capitalization: (Provide current figures)
 3. Fundamental Analysis Data (JSON block for charting):
    - Revenue (last 5 years as an array)
-   - Profits (last 5 years as an array)
+   - Profits (last 3 years as an array for bar chart)
+   - Price Trend (last 10 data points for line chart)
    - EPS & ROE (current figures)
-   - Debt to Equity ratio
+   - Debt to Equity ratio (number)
    - Promoter holding, FII, and DII holding (as percentages)
 4. Technical Analysis Indicators:
    - Trend (short-term & long-term)
    - Support & Resistance levels (provide specific price points)
    - RSI (number), MACD (crossover status), Moving Averages (50-day, 200-day)
-   - Volume analysis (relative to 30-day average)
+   - Volume analysis
 5. Final verdict: Buy / Hold / Avoid (with clear reasoning)
 
-Format the majority of the report in Markdown, but ensure numerical data is clearly presented in tables or lists for easy parsing.
+Format the report in Markdown, but ensure numerical data for charts is in a clean JSON block at the end.
 `;
 
       const completion = await openai.chat.completions.create({

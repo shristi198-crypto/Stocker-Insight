@@ -41,9 +41,17 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
     }
   }
 
-  // Sample data preparation if AI provides arrays
+  // Sample data preparation
   const revenueData = chartData?.Revenue && Array.isArray(chartData.Revenue) 
     ? chartData.Revenue.map((val: number, i: number) => ({ year: `Y${i+1}`, value: val }))
+    : [];
+
+  const profitData = chartData?.Profits && Array.isArray(chartData.Profits)
+    ? chartData.Profits.map((val: number, i: number) => ({ year: `Y${i+1}`, value: val }))
+    : [];
+
+  const priceTrendData = chartData?.['Price Trend'] && Array.isArray(chartData['Price Trend'])
+    ? chartData['Price Trend'].map((val: number, i: number) => ({ time: `T${i+1}`, value: val }))
     : [];
 
   const holdingData = chartData ? [
@@ -65,7 +73,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider border border-primary/20">
-                Visual Stock Analysis
+                Visual Market Analysis
               </span>
               <span className="text-muted-foreground text-sm font-mono">
                 {format(new Date(analysis.createdAt || Date.now()), "MMM d, yyyy")}
@@ -75,7 +83,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
               {analysis.symbol}
             </h1>
             <p className="text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
+              <Activity className="w-4 h-4 text-primary" />
               Dynamic Market Intelligence Report
             </p>
           </div>
@@ -99,11 +107,11 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
           <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <BarChart className="w-5 h-5 text-primary" />
-              Revenue Growth Pattern
+              Profit Growth (Last 3 Years)
             </h3>
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <ReBarChart data={revenueData}>
+                <ReBarChart data={profitData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
                   <XAxis dataKey="year" stroke="#888" fontSize={12} />
                   <YAxis stroke="#888" fontSize={12} />
@@ -111,7 +119,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
                     contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }}
                     itemStyle={{ color: '#10b981' }}
                   />
-                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
                 </ReBarChart>
               </ResponsiveContainer>
             </div>
@@ -119,8 +127,29 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
 
           <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Price Trend (Line Chart)
+            </h3>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={priceTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+                  <XAxis dataKey="time" stroke="#888" fontSize={12} />
+                  <YAxis stroke="#888" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }}
+                    itemStyle={{ color: '#3b82f6' }}
+                  />
+                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <PieChart className="w-5 h-5 text-primary" />
-              Shareholding Structure
+              Shareholding Structure (%)
             </h3>
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -144,13 +173,38 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
                 </RePieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex justify-center gap-4 mt-2">
+            <div className="flex justify-center flex-wrap gap-4 mt-2">
               {holdingData.map((entry, index) => (
                 <div key={entry.name} className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                  <span className="text-xs text-muted-foreground">{entry.name}</span>
+                  <span className="text-xs text-muted-foreground">{entry.name}: {entry.value}%</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-md flex flex-col justify-center">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-primary" />
+              Key Fundamentals
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-secondary/20 rounded-lg border border-border/50">
+                <p className="text-xs text-muted-foreground uppercase">Debt to Equity</p>
+                <p className="text-xl font-mono font-bold text-primary">{chartData?.['Debt to Equity ratio'] || 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-secondary/20 rounded-lg border border-border/50">
+                <p className="text-xs text-muted-foreground uppercase">ROE</p>
+                <p className="text-xl font-mono font-bold text-primary">{chartData?.ROE || 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-secondary/20 rounded-lg border border-border/50">
+                <p className="text-xs text-muted-foreground uppercase">EPS</p>
+                <p className="text-xl font-mono font-bold text-primary">{chartData?.EPS || 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-secondary/20 rounded-lg border border-border/50">
+                <p className="text-xs text-muted-foreground uppercase">Market Cap</p>
+                <p className="text-sm font-mono font-bold text-primary truncate">{chartData?.['Market Capitalization'] || 'N/A'}</p>
+              </div>
             </div>
           </div>
         </div>
