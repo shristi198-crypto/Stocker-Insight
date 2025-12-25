@@ -1,8 +1,8 @@
-# MarketSenseAI
+# Stocker-Insight
 
 ## Overview
 
-MarketSenseAI is a financial stock analysis platform for the Indian stock market (NSE/BSE). Users enter a stock symbol and receive AI-generated comprehensive analysis reports covering fundamental analysis, technical analysis, risk factors, and buy/hold/avoid recommendations. The application uses OpenAI to generate detailed markdown reports that are stored in a PostgreSQL database and displayed with a modern financial dashboard aesthetic.
+Stocker-Insight is a financial stock analysis platform for the Indian stock market (NSE/BSE). Users enter a stock symbol and receive AI-generated comprehensive analysis reports covering fundamental analysis, technical analysis, risk factors, and buy/hold/avoid recommendations. The application uses OpenAI to generate detailed markdown reports that are stored in a PostgreSQL database and displayed with a modern financial dashboard aesthetic.
 
 ## User Preferences
 
