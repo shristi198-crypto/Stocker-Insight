@@ -22,32 +22,30 @@ export async function registerRoutes(
 
       // Generate analysis using OpenAI
       const prompt = `
-Act as a professional Stock Market Analyst.
+Act as a professional Stock Market Analyst for the Indian and global markets.
 Analyze the stock: ${symbol}
-Market: Indian Stock Market (NSE/BSE)
+Market: Indian Stock Market (NSE/BSE) and global market references if applicable.
 
-Provide a detailed analysis covering the following points:
+Provide a detailed analysis using NUMBERS, FIGURES, and patterns suitable for GRAPHICAL representation.
 
-1. Company Overview (business model, sector, competitors)
-2. Current Market Price & Market Capitalization
-3. Fundamental Analysis:
-   - Revenue growth (last 3–5 years)
-   - Profit growth
-   - EPS & ROE
+Structure the response as follows:
+
+1. Company Overview: (business model, sector, competitors) - EXACTLY 1 LINE.
+2. Current Market Price & Market Capitalization: (Provide current figures)
+3. Fundamental Analysis Data (JSON block for charting):
+   - Revenue (last 5 years as an array)
+   - Profits (last 5 years as an array)
+   - EPS & ROE (current figures)
    - Debt to Equity ratio
-   - Promoter holding & FII/DII holding
-4. Technical Analysis:
+   - Promoter holding, FII, and DII holding (as percentages)
+4. Technical Analysis Indicators:
    - Trend (short-term & long-term)
-   - Support & Resistance levels
-   - RSI, MACD, Moving Averages
-   - Volume analysis
-5. Recent News or Events impacting the stock
-6. Risk factors involved
-7. Short-term view (1–3 months)
-8. Long-term view (1–3 years)
-9. Final verdict: Buy / Hold / Avoid (with reasoning)
+   - Support & Resistance levels (provide specific price points)
+   - RSI (number), MACD (crossover status), Moving Averages (50-day, 200-day)
+   - Volume analysis (relative to 30-day average)
+5. Final verdict: Buy / Hold / Avoid (with clear reasoning)
 
-Explain in simple language suitable for a beginner. Format the output in Markdown.
+Format the majority of the report in Markdown, but ensure numerical data is clearly presented in tables or lists for easy parsing.
 `;
 
       const completion = await openai.chat.completions.create({
