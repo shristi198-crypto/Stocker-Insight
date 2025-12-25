@@ -1,9 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Newspaper, TrendingUp, BookOpen, Users, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Newspaper, TrendingUp, BookOpen, Users, Zap } from "lucide-react";
 
 export default function MarketMonitor() {
+  const magicStocks = [
+    { symbol: "TATASTEEL", score: "98/100", reason: "Breakout Volume + News" },
+    { symbol: "ADANIENT", score: "95/100", reason: "Institutional Accumulation" },
+    { symbol: "HDFCBANK", score: "92/100", reason: "Active Trader Interest" },
+    { symbol: "ZOMATO", score: "89/100", reason: "Earnings Surprise Alert" },
+  ];
+
   const highVolumeStocks = [
     { symbol: "RELIANCE", volume: "12.4M", change: "+1.2%" },
     { symbol: "HDFCBANK", volume: "8.1M", change: "-0.5%" },
@@ -37,7 +44,28 @@ export default function MarketMonitor() {
         Market Monitor
       </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        {/* 4-Magic List */}
+        <Card className="hover-elevate bg-primary/5 border-primary/20">
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Zap className="w-4 h-4 text-primary" />
+              4-MAGIC LIST
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {magicStocks.map((stock) => (
+              <div key={stock.symbol} className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <p className="text-sm font-black">{stock.symbol}</p>
+                  <Badge variant="outline" className="text-[10px] bg-primary/10 border-primary/20">{stock.score}</Badge>
+                </div>
+                <p className="text-[10px] text-muted-foreground uppercase">{stock.reason}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
         {/* Market News */}
         <Card className="hover-elevate">
           <CardHeader className="flex flex-row items-center justify-between gap-2">
