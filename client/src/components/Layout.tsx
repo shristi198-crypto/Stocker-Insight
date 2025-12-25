@@ -19,6 +19,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
               Dashboard
             </Link>
+            <Link href="/stocks" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              Stocks
+            </Link>
+            <Link href="/news/1" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              News
+            </Link>
             <a 
               href="https://github.com" 
               target="_blank" 

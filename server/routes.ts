@@ -51,8 +51,10 @@ Explain in simple language suitable for a beginner. Format the output in Markdow
 `;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-5.1",
+        model: "gpt-4o",
         messages: [{ role: "user", content: prompt }],
+        max_tokens: 1500,
+        temperature: 0.7,
       });
 
       const report = completion.choices[0]?.message?.content || "Failed to generate report.";
