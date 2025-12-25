@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import AnalysisPage from "./pages/AnalysisPage";
 import StockLists from "./pages/StockLists";
 import NewsPage from "./pages/NewsPage";
+import MarketMonitor from "./pages/MarketMonitor";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/analysis/:id" component={AnalysisPage} />
       <Route path="/stocks" component={StockLists} />
       <Route path="/news/:id" component={NewsPage} />
+      <Route path="/monitor" component={MarketMonitor} />
       <Route component={NotFound} />
     </Switch>
   );
