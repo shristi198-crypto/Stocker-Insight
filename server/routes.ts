@@ -29,7 +29,7 @@ Market: Indian Stock Market (NSE/BSE)
 Provide a detailed analysis covering the following points:
 
 1. Company Overview (business model, sector, competitors)
-2. Current Market Price & Market Capitalization (Estimate or mention "as of latest close")
+2. Current Market Price & Market Capitalization
 3. Fundamental Analysis:
    - Revenue growth (last 3–5 years)
    - Profit growth
