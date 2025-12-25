@@ -1,6 +1,6 @@
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableTableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -47,16 +47,16 @@ export default function StockLists() {
             <CardContent>
               <Table>
                 <TableHeader>
-                  <TableTableRow>
+                  <TableRow>
                     <TableHead>Symbol</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Volume</TableHead>
                     <TableHead className="text-right">Change</TableHead>
-                  </TableTableRow>
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
                   {highVolume.map((stock) => (
-                    <TableTableRow key={stock.symbol}>
+                    <TableRow key={stock.symbol}>
                       <TableCell className="font-medium">{stock.symbol}</TableCell>
                       <TableCell>₹{stock.price}</TableCell>
                       <TableCell>{stock.volume}</TableCell>
@@ -65,7 +65,7 @@ export default function StockLists() {
                           {stock.change}
                         </Badge>
                       </TableCell>
-                    </TableTableRow>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>
@@ -82,16 +82,16 @@ export default function StockLists() {
             <CardContent>
               <Table>
                 <TableHeader>
-                  <TableTableRow>
+                  <TableRow>
                     <TableHead>Symbol</TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>Volume</TableHead>
                     <TableHead className="text-right">Change</TableHead>
-                  </TableTableRow>
+                  </TableHeader>
                 </TableHeader>
                 <TableBody>
                   {lowVolume.map((stock) => (
-                    <TableTableRow key={stock.symbol}>
+                    <TableRow key={stock.symbol}>
                       <TableCell className="font-medium">{stock.symbol}</TableCell>
                       <TableCell>₹{stock.price}</TableCell>
                       <TableCell>{stock.volume}</TableCell>
@@ -100,7 +100,7 @@ export default function StockLists() {
                           {stock.change}
                         </Badge>
                       </TableCell>
-                    </TableTableRow>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>
