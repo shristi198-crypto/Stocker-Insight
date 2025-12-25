@@ -26,27 +26,40 @@ Act as a professional Stock Market and Forex Analyst.
 Analyze the asset: ${symbol}
 Market: Indian Stock Market (NSE/BSE) and Forex markets.
 
-Provide a detailed analysis using NUMBERS, FIGURES, and patterns suitable for GRAPHICAL representation.
+Provide a comprehensive dashboard-style analysis with data visualizations.
 
 Structure the response as follows:
 
 1. Company Overview: (business model, sector, competitors) - EXACTLY 1 LINE.
-2. Current Market Price & Market Capitalization: (Provide current figures)
+2. Market Snapshot: (Current Market Price, Market Cap, 52-week High/Low)
 3. Fundamental Analysis Data (JSON block for charting):
-   - Revenue (last 5 years as an array)
-   - Profits (last 3 years as an array for bar chart)
-   - Price Trend (last 10 data points for line chart)
-   - EPS & ROE (current figures)
-   - Debt to Equity ratio (number)
-   - Promoter holding, FII, and DII holding (as percentages)
-4. Technical Analysis Indicators:
-   - Trend (short-term & long-term)
-   - Support & Resistance levels (provide specific price points)
-   - RSI (number), MACD (crossover status), Moving Averages (50-day, 200-day)
-   - Volume analysis
+   {
+     "Revenue": [5 years array],
+     "Profits": [3 years array],
+     "Price_Trend": [10 data points array],
+     "Volume": [10 data points array],
+     "EPS": number,
+     "ROE": number,
+     "Debt_to_Equity": number,
+     "Promoter_holding": percentage,
+     "FII_holding": percentage,
+     "DII_holding": percentage,
+     "CMP": number,
+     "Market_Cap": "string",
+     "High_52": number,
+     "Low_52": number,
+     "RSI": number,
+     "MACD": "string",
+     "MA_50": number,
+     "MA_100": number,
+     "MA_200": number,
+     "Support": [price1, price2],
+     "Resistance": [price1, price2]
+   }
+4. Technical Analysis: (Trend, Support/Resistance, RSI/MACD/MA details, Volume analysis)
 5. Final verdict: Buy / Hold / Avoid (with clear reasoning)
 
-Format the report in Markdown, but ensure numerical data for charts is in a clean JSON block at the end.
+Format the report in Markdown, but ensure the JSON block is CLEARLY marked with \`\`\`json.
 `;
 
       const completion = await openai.chat.completions.create({

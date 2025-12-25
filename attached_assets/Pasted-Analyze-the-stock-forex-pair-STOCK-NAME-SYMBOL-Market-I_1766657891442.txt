@@ -1,0 +1,92 @@
+Analyze the stock / forex pair: **[STOCK NAME / SYMBOL]**
+Market: **Indian Stock Market / Forex Market**
+
+Provide a comprehensive dashboard-style analysis with **data visualizations** (charts, graphs, and tables) that covers the following sections:
+
+---
+
+## 🧾 1) Company Overview
+• One-line description including:
+  - Business model
+  - Sector
+  - Main competitors
+
+---
+
+## 💰 2) Current Market Snapshot
+• **Current Market Price (CMP)**  
+• **Market Capitalization**  
+• **52-week High & Low**
+
+Present this information **as a table or card format.**
+
+---
+
+## 📊 3) Fundamental Analysis (Numbers + Charts)
+Include data (last 3–5 years where applicable):
+
+### 📈 Revenue Growth
+• Show revenue for last 3–5 years  
+• Include **line chart / bar chart** showing growth trend
+
+### 📈 Profit Growth
+• Profit after tax for last **3 years**  
+• **Bar chart** comparing them
+
+### 📊 Key Ratios
+• **EPS (Earnings Per Share)**
+• **ROE (Return on Equity)**
+• **Debt-to-Equity Ratio**
+
+• Display these in a **table + gauge visuals**
+
+### 📌 Shareholding Pattern
+• **Promoter Holding (%)**
+• **FII (%)**
+• **DII (%)**
+
+• Use a **pie chart or stacked bar chart**
+
+---
+
+## 📉 4) Technical Analysis (With Visuals)
+Use recent price & volume data to show:
+
+### 📈 Trend Chart
+• Line chart of stock price (last 6–12 months)
+
+### 🚧 Support & Resistance
+• List key support & resistance levels
+• Overlay on the price chart
+
+### 📊 Technical Indicators
+• **RSI (Relative Strength Index)**
+• **MACD (Histogram + Signal Line)**
+• **Moving Averages (50-MA, 100-MA, 200-MA)**
+
+• Present with **indicator panels under price chart**
+
+### 📦 Volume Analysis
+• Volume bars
+• Show increasing / decreasing volume patterns
+
+---
+
+## 🏁 5) Final Verdict
+• **Recommendation:** Buy / Hold / Avoid  
+• **Reasoning:** Include fundamental + technical insights  
+• Summarize key signals influencing the decision
+
+---
+
+## 📈 OPTIONAL: Summary Visual Dashboard
+At the end produce a **one-page summary visualization** with:
+• Key Metrics Card  
+• Trend Chart  
+• Profit & Revenue Graphs  
+• Tech Indicators (RSI, MACD, MAs)  
+• Verdict card
+
+---
+
+**Respond with well-formatted text, tables, and charts where applicable. Use labels and legends for all graphics.**

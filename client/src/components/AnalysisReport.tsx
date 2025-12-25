@@ -50,21 +50,25 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
     ? chartData.Profits.map((val: number, i: number) => ({ year: `Y${i+1}`, value: val }))
     : [];
 
-  const priceTrendData = chartData?.['Price Trend'] && Array.isArray(chartData['Price Trend'])
-    ? chartData['Price Trend'].map((val: number, i: number) => ({ time: `T${i+1}`, value: val }))
+  const priceTrendData = chartData?.Price_Trend && Array.isArray(chartData.Price_Trend)
+    ? chartData.Price_Trend.map((val: number, i: number) => ({ time: `T${i+1}`, value: val }))
+    : [];
+
+  const volumeData = chartData?.Volume && Array.isArray(chartData.Volume)
+    ? chartData.Volume.map((val: number, i: number) => ({ time: `V${i+1}`, value: val }))
     : [];
 
   const holdingData = chartData ? [
-    { name: 'Promoter', value: parseFloat(chartData['Promoter holding']) || 0 },
-    { name: 'FII', value: parseFloat(chartData['FII holding']) || 0 },
-    { name: 'DII', value: parseFloat(chartData['DII holding']) || 0 },
-    { name: 'Public', value: 100 - ((parseFloat(chartData['Promoter holding']) || 0) + (parseFloat(chartData['FII holding']) || 0) + (parseFloat(chartData['DII holding']) || 0)) }
+    { name: 'Promoter', value: parseFloat(chartData.Promoter_holding) || 0 },
+    { name: 'FII', value: parseFloat(chartData.FII_holding) || 0 },
+    { name: 'DII', value: parseFloat(chartData.DII_holding) || 0 },
+    { name: 'Public', value: 100 - ((parseFloat(chartData.Promoter_holding) || 0) + (parseFloat(chartData.FII_holding) || 0) + (parseFloat(chartData.DII_holding) || 0)) }
   ].filter(d => d.value > 0) : [];
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
 
   return (
-    <div className="w-full max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6">
+    <div className="w-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6">
       {/* Report Header */}
       <div className="bg-card border border-border rounded-2xl p-8 md:p-10 relative overflow-hidden shadow-lg">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
@@ -101,6 +105,28 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
         </div>
       </div>
 
+      {/* Market Snapshot Card */}
+      {chartData && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground uppercase mb-1">CMP</p>
+            <p className="text-2xl font-black text-primary">₹{chartData.CMP || 'N/A'}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground uppercase mb-1">Market Cap</p>
+            <p className="text-2xl font-black text-primary truncate">{chartData.Market_Cap || 'N/A'}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground uppercase mb-1">52W High</p>
+            <p className="text-2xl font-black text-emerald-500">₹{chartData.High_52 || 'N/A'}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground uppercase mb-1">52W Low</p>
+            <p className="text-2xl font-black text-rose-500">₹{chartData.Low_52 || 'N/A'}</p>
+          </div>
+        </div>
+      )}
+
       {/* Graphical Data Section */}
       {chartData && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -128,7 +154,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
           <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
-              Price Trend (Line Chart)
+              Price Trend & Support/Resistance
             </h3>
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -140,7 +166,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
                     contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }}
                     itemStyle={{ color: '#3b82f6' }}
                   />
-                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6' }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -183,29 +209,55 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-md flex flex-col justify-center">
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Activity className="w-5 h-5 text-primary" />
-              Key Fundamentals
+              Technical Indicators
             </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-secondary/20 rounded-lg border border-border/50">
-                <p className="text-xs text-muted-foreground uppercase">Debt to Equity</p>
-                <p className="text-xl font-mono font-bold text-primary">{chartData?.['Debt to Equity ratio'] || 'N/A'}</p>
+            <div className="grid grid-cols-2 gap-4 h-full pb-4">
+              <div className="p-4 bg-secondary/20 rounded-xl border border-border/50 flex flex-col justify-center text-center">
+                <p className="text-xs text-muted-foreground uppercase mb-1">RSI (14)</p>
+                <p className={`text-2xl font-black ${chartData.RSI > 70 ? 'text-rose-500' : chartData.RSI < 30 ? 'text-emerald-500' : 'text-primary'}`}>
+                  {chartData.RSI || 'N/A'}
+                </p>
+                <p className="text-[10px] text-muted-foreground">{chartData.RSI > 70 ? 'Overbought' : chartData.RSI < 30 ? 'Oversold' : 'Neutral'}</p>
               </div>
-              <div className="p-3 bg-secondary/20 rounded-lg border border-border/50">
-                <p className="text-xs text-muted-foreground uppercase">ROE</p>
-                <p className="text-xl font-mono font-bold text-primary">{chartData?.ROE || 'N/A'}</p>
+              <div className="p-4 bg-secondary/20 rounded-xl border border-border/50 flex flex-col justify-center text-center">
+                <p className="text-xs text-muted-foreground uppercase mb-1">MACD</p>
+                <p className="text-sm font-bold text-primary truncate px-1">{chartData.MACD || 'N/A'}</p>
               </div>
-              <div className="p-3 bg-secondary/20 rounded-lg border border-border/50">
-                <p className="text-xs text-muted-foreground uppercase">EPS</p>
-                <p className="text-xl font-mono font-bold text-primary">{chartData?.EPS || 'N/A'}</p>
+              <div className="p-4 bg-secondary/20 rounded-xl border border-border/50 flex flex-col justify-center text-center">
+                <p className="text-xs text-muted-foreground uppercase mb-1">50-Day MA</p>
+                <p className="text-xl font-mono font-bold text-primary">₹{chartData.MA_50 || 'N/A'}</p>
               </div>
-              <div className="p-3 bg-secondary/20 rounded-lg border border-border/50">
-                <p className="text-xs text-muted-foreground uppercase">Market Cap</p>
-                <p className="text-sm font-mono font-bold text-primary truncate">{chartData?.['Market Capitalization'] || 'N/A'}</p>
+              <div className="p-4 bg-secondary/20 rounded-xl border border-border/50 flex flex-col justify-center text-center">
+                <p className="text-xs text-muted-foreground uppercase mb-1">200-Day MA</p>
+                <p className="text-xl font-mono font-bold text-primary">₹{chartData.MA_200 || 'N/A'}</p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Volume Chart */}
+      {chartData && (
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-primary" />
+            Volume Analysis
+          </h3>
+          <div className="h-[150px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <ReBarChart data={volumeData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+                <XAxis dataKey="time" hide />
+                <YAxis hide />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }}
+                />
+                <Bar dataKey="value" fill="#6366f1" radius={[2, 2, 0, 0]} />
+              </ReBarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}
