@@ -22,16 +22,16 @@ export async function registerRoutes(
 
       // Generate analysis using OpenAI
       const prompt = `
-Act as a professional Stock Market and Forex Analyst.
-Analyze the asset: ${symbol}
-Market: Indian Stock Market (NSE/BSE) and Forex markets.
+Act as a professional Financial Analyst for the Indian Stock Market.
+Analyze the stock: ${symbol}
+Market: Indian Stock Market (NSE/BSE)
 
-Provide a comprehensive dashboard-style analysis with data visualizations.
+Reference data points typically found on https://www.screener.in/company/${symbol}
 
-Structure the response as follows:
+Provide a detailed analysis covering:
 
-1. Company Overview: (business model, sector, competitors) - EXACTLY 1 LINE.
-2. Market Snapshot: (Current Market Price, Market Cap, 52-week High/Low)
+1. Company Overview (business model, sector, competitors) - EXACTLY 1 LINE.
+2. Market Snapshot: (Current Market Price & Market Capitalization, 52-week High/Low)
 3. Fundamental Analysis Data (JSON block for charting):
    {
      "Revenue_Growth": [5 years array],
@@ -45,13 +45,12 @@ Structure the response as follows:
      "FII_holding": percentage,
      "DII_holding": percentage,
      "CMP": number,
-     "Market_Cap": "string",
+     "Market_Cap_Cr": number,
      "High_52": number,
      "Low_52": number,
      "RSI": number,
      "MACD": "string",
      "MA_50": number,
-     "MA_100": number,
      "MA_200": number,
      "Support": [price1, price2],
      "Resistance": [price1, price2]

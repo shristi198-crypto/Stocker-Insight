@@ -107,10 +107,14 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
 
       {/* Market Snapshot Card */}
       {chartData && (
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
             <p className="text-xs text-muted-foreground uppercase mb-1">CMP</p>
             <p className="text-2xl font-black text-primary">₹{chartData.CMP || 'N/A'}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground uppercase mb-1">Market Cap</p>
+            <p className="text-2xl font-black text-primary truncate">₹{chartData.Market_Cap_Cr ? `${chartData.Market_Cap_Cr} Cr` : (chartData.Market_Cap || 'N/A')}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
             <p className="text-xs text-muted-foreground uppercase mb-1">EPS</p>
@@ -124,13 +128,25 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
             <p className="text-xs text-muted-foreground uppercase mb-1">D/E Ratio</p>
             <p className="text-2xl font-black text-primary">{chartData.Debt_to_Equity || 'N/A'}</p>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
-            <p className="text-xs text-muted-foreground uppercase mb-1">52W High</p>
-            <p className="text-2xl font-black text-emerald-600">₹{chartData.High_52 || 'N/A'}</p>
+        </div>
+      )}
+
+      {/* 52W High/Low Card */}
+      {chartData && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex justify-between items-center">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase mb-1">52W High</p>
+              <p className="text-2xl font-black text-emerald-600">₹{chartData.High_52 || 'N/A'}</p>
+            </div>
+            <TrendingUp className="w-8 h-8 text-emerald-600/20" />
           </div>
-          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
-            <p className="text-xs text-muted-foreground uppercase mb-1">52W Low</p>
-            <p className="text-2xl font-black text-red-600">₹{chartData.Low_52 || 'N/A'}</p>
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex justify-between items-center">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase mb-1">52W Low</p>
+              <p className="text-2xl font-black text-red-600">₹{chartData.Low_52 || 'N/A'}</p>
+            </div>
+            <Activity className="w-8 h-8 text-red-600/20" />
           </div>
         </div>
       )}
