@@ -1,48 +1,90 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Newspaper, TrendingUp, BookOpen, Users, Zap } from "lucide-react";
 
 export default function MarketMonitor() {
-  const magicStocks = [
+  const [magicStocks, setMagicStocks] = useState([
     { symbol: "TATASTEEL", score: "98/100", reason: "Breakout Volume + News" },
     { symbol: "ADANIENT", score: "95/100", reason: "Institutional Accumulation" },
     { symbol: "HDFCBANK", score: "92/100", reason: "Active Trader Interest" },
     { symbol: "ZOMATO", score: "89/100", reason: "Earnings Surprise Alert" },
-  ];
+  ]);
 
-  const highVolumeStocks = [
+  const [highVolumeStocks, setHighVolumeStocks] = useState([
     { symbol: "RELIANCE", volume: "12.4M", change: "+1.2%" },
     { symbol: "HDFCBANK", volume: "8.1M", change: "-0.5%" },
     { symbol: "TCS", volume: "5.2M", change: "+0.8%" },
     { symbol: "ICICIBANK", volume: "10.5M", change: "+2.1%" },
     { symbol: "INFY", volume: "7.8M", change: "-1.1%" },
-  ];
+  ]);
 
-  const orderBook = [
+  const [orderBook, setOrderBook] = useState([
     { price: "2450.50", qty: "1,200", type: "Bid" },
     { price: "2450.45", qty: "850", type: "Bid" },
     { price: "2451.00", qty: "500", type: "Ask" },
     { price: "2451.10", qty: "1,100", type: "Ask" },
-  ];
+  ]);
 
-  const activeTraders = [
+  const [activeTraders, setActiveTraders] = useState([
     { id: "TRD_882", activity: "High", tradeCount: 142 },
     { id: "TRD_119", activity: "Medium", tradeCount: 89 },
     { id: "TRD_454", activity: "High", tradeCount: 215 },
-  ];
+  ]);
 
-  const marketNews = [
+  const [marketNews, setMarketNews] = useState([
     { title: "Sensex hits all-time high amid global rally", time: "10 mins ago" },
     { title: "RBI maintains repo rate at 6.5%", time: "1 hour ago" },
     { title: "IT stocks lead market gains today", time: "2 hours ago" },
-  ];
+  ]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Simulate price changes in high volume stocks
+      setHighVolumeStocks(prev => prev.map(stock => {
+        const changeVal = (Math.random() * 0.4 - 0.2);
+        const currentChange = parseFloat(stock.change);
+        const newChange = (currentChange + changeVal).toFixed(2);
+        return {
+          ...stock,
+          change: (newChange >= 0 ? "+" : "") + newChange + "%"
+        };
+      }));
+
+      // Simulate order book changes
+      setOrderBook(prev => prev.map(order => {
+        const priceChange = (Math.random() * 0.10 - 0.05).toFixed(2);
+        const newPrice = (parseFloat(order.price) + parseFloat(priceChange)).toFixed(2);
+        const newQty = Math.floor(parseInt(order.qty.replace(/,/g, '')) + (Math.random() * 100 - 50));
+        return {
+          ...order,
+          price: newPrice,
+          qty: Math.max(100, newQty).toLocaleString()
+        };
+      }));
+
+      // Update trader activity
+      setActiveTraders(prev => prev.map(trader => ({
+        ...trader,
+        tradeCount: trader.tradeCount + Math.floor(Math.random() * 3)
+      })));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-black tracking-tighter uppercase italic text-foreground mb-8">
-        Market Monitor
-      </h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-black tracking-tighter uppercase italic text-foreground">
+          Market Monitor
+        </h1>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Live Connection Active</span>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* 4-Magic List */}
