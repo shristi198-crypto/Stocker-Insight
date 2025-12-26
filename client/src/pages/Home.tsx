@@ -19,8 +19,8 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Experience the power of <span className="text-primary font-bold italic">Stocker-Insight</span>. 
             Instant fundamental & technical analysis for any Indian stock. 
-            Get buy/sell ratings, risk assessments, and future outlooks in seconds.
           </p>
         </div>
 

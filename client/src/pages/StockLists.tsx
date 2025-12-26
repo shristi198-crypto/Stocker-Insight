@@ -40,7 +40,7 @@ export default function StockLists() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <TrendingUp className="text-emerald-500" />
+                <TrendingUp className="text-emerald-600" />
                 High Volume Stocks
               </CardTitle>
             </CardHeader>

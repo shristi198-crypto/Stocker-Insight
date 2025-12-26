@@ -74,8 +74,8 @@ export default function CommoditiesPage() {
                   {bidActivities.map((activity) => (
                     <TableRow key={activity.commodity}>
                       <TableCell className="font-bold">{activity.commodity}</TableCell>
-                      <TableCell className="font-mono text-emerald-500">{activity.bid}</TableCell>
-                      <TableCell className="font-mono text-rose-500">{activity.ask}</TableCell>
+                      <TableCell className="font-mono text-emerald-600">{activity.bid}</TableCell>
+                      <TableCell className="font-mono text-red-600">{activity.ask}</TableCell>
                       <TableCell className="text-right font-mono">{activity.volume}</TableCell>
                     </TableRow>
                   ))}

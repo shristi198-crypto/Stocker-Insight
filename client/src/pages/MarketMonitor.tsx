@@ -88,7 +88,7 @@ export default function MarketMonitor() {
         <Card className="hover-elevate">
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
+              <TrendingUp className="w-4 h-4 text-emerald-600" />
               HIGH VOLUME
             </CardTitle>
           </CardHeader>
@@ -128,7 +128,7 @@ export default function MarketMonitor() {
               <TableBody>
                 {orderBook.map((order, i) => (
                   <TableRow key={i}>
-                    <TableCell className={`text-xs font-mono py-1 ${order.type === 'Bid' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    <TableCell className={`text-xs font-mono py-1 ${order.type === 'Bid' ? 'text-emerald-600' : 'text-red-600'}`}>
                       {order.price}
                     </TableCell>
                     <TableCell className="text-xs font-mono py-1 text-right">{order.qty}</TableCell>

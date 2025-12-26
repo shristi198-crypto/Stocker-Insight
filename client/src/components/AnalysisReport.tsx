@@ -65,12 +65,12 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
     { name: 'Public', value: 100 - ((parseFloat(chartData.Promoter_holding) || 0) + (parseFloat(chartData.FII_holding) || 0) + (parseFloat(chartData.DII_holding) || 0)) }
   ].filter(d => d.value > 0) : [];
 
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+  const COLORS = ['#9333ea', '#3b82f6', '#f59e0b', '#ef4444'];
 
   return (
     <div className="w-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6">
       {/* Report Header */}
-      <div className="bg-card border border-border rounded-2xl p-8 md:p-10 relative overflow-hidden shadow-lg">
+      <div className="bg-card border border-border rounded-2xl p-8 md:p-10 relative overflow-hidden shadow-sm">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
@@ -118,11 +118,11 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
           </div>
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
             <p className="text-xs text-muted-foreground uppercase mb-1">52W High</p>
-            <p className="text-2xl font-black text-emerald-500">₹{chartData.High_52 || 'N/A'}</p>
+            <p className="text-2xl font-black text-emerald-600">₹{chartData.High_52 || 'N/A'}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
             <p className="text-xs text-muted-foreground uppercase mb-1">52W Low</p>
-            <p className="text-2xl font-black text-rose-500">₹{chartData.Low_52 || 'N/A'}</p>
+            <p className="text-2xl font-black text-red-600">₹{chartData.Low_52 || 'N/A'}</p>
           </div>
         </div>
       )}
@@ -130,7 +130,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
       {/* Graphical Data Section */}
       {chartData && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <BarChart className="w-5 h-5 text-primary" />
               Profit Growth (Last 3 Years)
@@ -138,20 +138,20 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <ReBarChart data={profitData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
                   <XAxis dataKey="year" stroke="#888" fontSize={12} />
                   <YAxis stroke="#888" fontSize={12} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }}
-                    itemStyle={{ color: '#10b981' }}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '8px' }}
+                    itemStyle={{ color: '#16a34a' }}
                   />
-                  <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="value" fill="#16a34a" radius={[4, 4, 0, 0]} />
                 </ReBarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
               Price Trend & Support/Resistance
@@ -159,20 +159,20 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={priceTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
                   <XAxis dataKey="time" stroke="#888" fontSize={12} />
                   <YAxis stroke="#888" fontSize={12} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }}
-                    itemStyle={{ color: '#3b82f6' }}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '8px' }}
+                    itemStyle={{ color: '#9333ea' }}
                   />
-                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6' }} />
+                  <Line type="monotone" dataKey="value" stroke="#9333ea" strokeWidth={3} dot={{ r: 4, fill: '#9333ea' }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <PieChart className="w-5 h-5 text-primary" />
               Shareholding Structure (%)
@@ -194,7 +194,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }}
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '8px' }}
                   />
                 </RePieChart>
               </ResponsiveContainer>
@@ -209,7 +209,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Activity className="w-5 h-5 text-primary" />
               Technical Indicators
@@ -217,7 +217,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
             <div className="grid grid-cols-2 gap-4 h-full pb-4">
               <div className="p-4 bg-secondary/20 rounded-xl border border-border/50 flex flex-col justify-center text-center">
                 <p className="text-xs text-muted-foreground uppercase mb-1">RSI (14)</p>
-                <p className={`text-2xl font-black ${chartData.RSI > 70 ? 'text-rose-500' : chartData.RSI < 30 ? 'text-emerald-500' : 'text-primary'}`}>
+                <p className={`text-2xl font-black ${chartData.RSI > 70 ? 'text-red-600' : chartData.RSI < 30 ? 'text-emerald-600' : 'text-primary'}`}>
                   {chartData.RSI || 'N/A'}
                 </p>
                 <p className="text-[10px] text-muted-foreground">{chartData.RSI > 70 ? 'Overbought' : chartData.RSI < 30 ? 'Oversold' : 'Neutral'}</p>
@@ -241,7 +241,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
 
       {/* Volume Chart */}
       {chartData && (
-        <div className="bg-card border border-border rounded-2xl p-6 shadow-md">
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Activity className="w-5 h-5 text-primary" />
             Volume Analysis
@@ -249,13 +249,13 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
           <div className="h-[150px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ReBarChart data={volumeData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
                 <XAxis dataKey="time" hide />
                 <YAxis hide />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '8px' }}
+                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '8px' }}
                 />
-                <Bar dataKey="value" fill="#6366f1" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="value" fill="#9333ea" radius={[2, 2, 0, 0]} />
               </ReBarChart>
             </ResponsiveContainer>
           </div>
@@ -263,12 +263,12 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
       )}
 
       {/* Markdown Content */}
-      <div className="bg-background border border-border rounded-2xl p-8 md:p-12 shadow-inner relative">
-        <div className="prose prose-invert prose-lg max-w-none prose-headings:text-primary prose-strong:text-emerald-400">
+      <div className="bg-white border border-border rounded-2xl p-8 md:p-12 shadow-sm relative">
+        <div className="prose prose-lg max-w-none prose-headings:text-primary prose-strong:text-emerald-600">
           <ReactMarkdown>{analysis.report.replace(/```json\n[\s\S]*?\n```/, '')}</ReactMarkdown>
         </div>
         
-        <div className="mt-12 pt-8 border-t border-border/50 flex items-start gap-4 text-sm text-muted-foreground bg-secondary/10 p-6 rounded-xl">
+        <div className="mt-12 pt-8 border-t border-border/50 flex items-start gap-4 text-sm text-muted-foreground bg-secondary/30 p-6 rounded-xl">
           <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <p className="leading-relaxed">
             <strong>Disclaimer:</strong> This graphical report is generated by AI for informational purposes only. 
