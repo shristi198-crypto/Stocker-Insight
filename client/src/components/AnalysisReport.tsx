@@ -42,12 +42,12 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
   }
 
   // Sample data preparation
-  const revenueData = chartData?.Revenue && Array.isArray(chartData.Revenue) 
-    ? chartData.Revenue.map((val: number, i: number) => ({ year: `Y${i+1}`, value: val }))
+  const revenueData = chartData?.Revenue_Growth && Array.isArray(chartData.Revenue_Growth) 
+    ? chartData.Revenue_Growth.map((val: number, i: number) => ({ year: `Y${i+1}`, value: val }))
     : [];
 
-  const profitData = chartData?.Profits && Array.isArray(chartData.Profits)
-    ? chartData.Profits.map((val: number, i: number) => ({ year: `Y${i+1}`, value: val }))
+  const profitData = chartData?.Profit_Growth && Array.isArray(chartData.Profit_Growth)
+    ? chartData.Profit_Growth.map((val: number, i: number) => ({ year: `Y${i+1}`, value: val }))
     : [];
 
   const priceTrendData = chartData?.Price_Trend && Array.isArray(chartData.Price_Trend)
@@ -107,14 +107,22 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
 
       {/* Market Snapshot Card */}
       {chartData && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
             <p className="text-xs text-muted-foreground uppercase mb-1">CMP</p>
             <p className="text-2xl font-black text-primary">₹{chartData.CMP || 'N/A'}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
-            <p className="text-xs text-muted-foreground uppercase mb-1">Market Cap</p>
-            <p className="text-2xl font-black text-primary truncate">{chartData.Market_Cap || 'N/A'}</p>
+            <p className="text-xs text-muted-foreground uppercase mb-1">EPS</p>
+            <p className="text-2xl font-black text-primary">₹{chartData.EPS || 'N/A'}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground uppercase mb-1">ROE</p>
+            <p className="text-2xl font-black text-primary">{chartData.ROE ? `${chartData.ROE}%` : 'N/A'}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground uppercase mb-1">D/E Ratio</p>
+            <p className="text-2xl font-black text-primary">{chartData.Debt_to_Equity || 'N/A'}</p>
           </div>
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
             <p className="text-xs text-muted-foreground uppercase mb-1">52W High</p>
@@ -133,7 +141,28 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <BarChart className="w-5 h-5 text-primary" />
-              Profit Growth (Last 3 Years)
+              Revenue Growth (Last 3-5 Years)
+            </h3>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ReBarChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
+                  <XAxis dataKey="year" stroke="#888" fontSize={12} />
+                  <YAxis stroke="#888" fontSize={12} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '8px' }}
+                    itemStyle={{ color: '#9333ea' }}
+                  />
+                  <Bar dataKey="value" fill="#9333ea" radius={[4, 4, 0, 0]} />
+                </ReBarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <BarChart className="w-5 h-5 text-primary" />
+              Profit Growth (Last 3-5 Years)
             </h3>
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -233,6 +262,30 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
               <div className="p-4 bg-secondary/20 rounded-xl border border-border/50 flex flex-col justify-center text-center">
                 <p className="text-xs text-muted-foreground uppercase mb-1">200-Day MA</p>
                 <p className="text-xl font-mono font-bold text-primary">₹{chartData.MA_200 || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Fundamental Metrics
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-secondary/20 rounded-xl border border-border/50">
+                <p className="text-[10px] text-muted-foreground uppercase">EPS</p>
+                <p className="text-lg font-bold text-primary">₹{chartData.EPS || 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-secondary/20 rounded-xl border border-border/50">
+                <p className="text-[10px] text-muted-foreground uppercase">ROE</p>
+                <p className="text-lg font-bold text-primary">{chartData.ROE ? `${chartData.ROE}%` : 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-secondary/20 rounded-xl border border-border/50">
+                <p className="text-[10px] text-muted-foreground uppercase">D/E Ratio</p>
+                <p className="text-lg font-bold text-primary">{chartData.Debt_to_Equity || 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-secondary/20 rounded-xl border border-border/50">
+                <p className="text-[10px] text-muted-foreground uppercase">Holdings (P/F/D)</p>
+                <p className="text-sm font-bold text-primary">{chartData.Promoter_holding}% / {chartData.FII_holding}% / {chartData.DII_holding}%</p>
               </div>
             </div>
           </div>

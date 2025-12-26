@@ -34,8 +34,8 @@ Structure the response as follows:
 2. Market Snapshot: (Current Market Price, Market Cap, 52-week High/Low)
 3. Fundamental Analysis Data (JSON block for charting):
    {
-     "Revenue": [5 years array],
-     "Profits": [3 years array],
+     "Revenue_Growth": [5 years array],
+     "Profit_Growth": [3 years array],
      "Price_Trend": [10 data points array],
      "Volume": [10 data points array],
      "EPS": number,
