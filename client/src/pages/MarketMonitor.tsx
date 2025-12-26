@@ -45,10 +45,11 @@ export default function MarketMonitor() {
       setHighVolumeStocks(prev => prev.map(stock => {
         const changeVal = (Math.random() * 0.4 - 0.2);
         const currentChange = parseFloat(stock.change);
-        const newChange = (currentChange + changeVal).toFixed(2);
+        const newChangeNumeric = currentChange + changeVal;
+        const newChangeStr = newChangeNumeric.toFixed(2);
         return {
           ...stock,
-          change: (newChange >= 0 ? "+" : "") + newChange + "%"
+          change: (newChangeNumeric >= 0 ? "+" : "") + newChangeStr + "%"
         };
       }));
 
