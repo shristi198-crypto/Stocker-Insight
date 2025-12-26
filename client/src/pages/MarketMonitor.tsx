@@ -41,6 +41,20 @@ export default function MarketMonitor() {
 
   useEffect(() => {
     const interval = setInterval(() => {
+      // Dynamically update Magic Stocks based on other signals
+      setMagicStocks(prev => {
+        const topVolume = highVolumeStocks[0]?.symbol || "N/A";
+        const latestNews = marketNews[0]?.title || "N/A";
+        const bestBid = orderBook.find(o => o.type === 'Bid')?.price || "N/A";
+
+        return [
+          { symbol: topVolume, score: "99/100", reason: "Volume Peak + Price Action" },
+          { symbol: prev[1].symbol, score: "96/100", reason: `News: ${latestNews.substring(0, 20)}...` },
+          { symbol: prev[2].symbol, score: "94/100", reason: `Order Flow Support at ₹${bestBid}` },
+          { symbol: prev[3].symbol, score: "91/100", reason: "Institutional Buy Signal" },
+        ];
+      });
+
       // Simulate price changes in high volume stocks
       setHighVolumeStocks(prev => prev.map(stock => {
         const changeVal = (Math.random() * 0.4 - 0.2);
