@@ -32,29 +32,6 @@ Provide a detailed analysis covering:
 
 1. Company Overview (business model, sector, competitors) - EXACTLY 1 LINE.
 2. Market Snapshot: (Current Market Price & Market Capitalization in Cr, 52-week High/Low)
-3. Fundamental Analysis Data (JSON block for charting):
-   {
-     "Revenue_Growth": [5 years array of numbers representing yearly revenue],
-     "Profit_Growth": [3 years array of numbers representing yearly net profit],
-     "Price_Trend": [10 data points representing recent price action],
-     "Volume": [10 data points representing recent volume],
-     "EPS": number (Current Earnings Per Share),
-     "ROE": number (Return on Equity percentage),
-     "Debt_to_Equity": number (Debt to Equity ratio),
-     "Promoter_holding": percentage (Promoter holding),
-     "FII_holding": percentage (FII holding),
-     "DII_holding": percentage (DII holding),
-     "CMP": number (Current Market Price),
-     "Market_Cap_Cr": number (Market Cap in Crores),
-     "High_52": number (52-week High),
-     "Low_52": number (52-week Low),
-     "RSI": number,
-     "MACD": "string",
-     "MA_50": number,
-     "MA_200": number,
-     "Support": [price1, price2],
-     "Resistance": [price1, price2]
-   }
 4. Technical Analysis: (Trend, Support/Resistance, RSI/MACD/MA details, Volume analysis)
 5. Final verdict: Buy / Hold / Avoid (with clear reasoning)
 
