@@ -22,32 +22,32 @@ export async function registerRoutes(
 
       // Generate analysis using OpenAI
       const prompt = `
-Act as a professional Financial Analyst for the Indian Stock Market.
+Act as a professional Financial Analyst specialized in the Indian Stock Market.
 Analyze the stock: ${symbol}
 Market: Indian Stock Market (NSE/BSE)
 
-Reference data points typically found on https://www.screener.in/company/${symbol}
+You MUST provide precise financial numbers as found on professional platforms like Screener.in.
 
 Provide a detailed analysis covering:
 
 1. Company Overview (business model, sector, competitors) - EXACTLY 1 LINE.
-2. Market Snapshot: (Current Market Price & Market Capitalization, 52-week High/Low)
+2. Market Snapshot: (Current Market Price & Market Capitalization in Cr, 52-week High/Low)
 3. Fundamental Analysis Data (JSON block for charting):
    {
-     "Revenue_Growth": [5 years array],
-     "Profit_Growth": [3 years array],
-     "Price_Trend": [10 data points array],
-     "Volume": [10 data points array],
-     "EPS": number,
-     "ROE": number,
-     "Debt_to_Equity": number,
-     "Promoter_holding": percentage,
-     "FII_holding": percentage,
-     "DII_holding": percentage,
-     "CMP": number,
-     "Market_Cap_Cr": number,
-     "High_52": number,
-     "Low_52": number,
+     "Revenue_Growth": [5 years array of numbers representing yearly revenue],
+     "Profit_Growth": [3 years array of numbers representing yearly net profit],
+     "Price_Trend": [10 data points representing recent price action],
+     "Volume": [10 data points representing recent volume],
+     "EPS": number (Current Earnings Per Share),
+     "ROE": number (Return on Equity percentage),
+     "Debt_to_Equity": number (Debt to Equity ratio),
+     "Promoter_holding": percentage (Promoter holding),
+     "FII_holding": percentage (FII holding),
+     "DII_holding": percentage (DII holding),
+     "CMP": number (Current Market Price),
+     "Market_Cap_Cr": number (Market Cap in Crores),
+     "High_52": number (52-week High),
+     "Low_52": number (52-week Low),
      "RSI": number,
      "MACD": "string",
      "MA_50": number,
