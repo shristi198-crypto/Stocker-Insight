@@ -11,7 +11,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <TrendingUp className="w-5 h-5 text-primary" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              MarketSenseAI
+              Stocker-Insight
             </span>
           </Link>
           
@@ -25,17 +25,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/stocks" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
               Stocks
             </Link>
+            <Link href="/commodities" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              Commodities
+            </Link>
             <Link href="/news/1" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
               News
             </Link>
-            <a 
-              href="https://github.com" 
-              target="_blank" 
-              rel="noreferrer"
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              GitHub
-            </a>
           </nav>
         </div>
       </header>
@@ -48,7 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="container max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
           <div className="flex items-center gap-2 mb-4 md:mb-0">
             <BarChart3 className="w-4 h-4 opacity-50" />
-            <span>© 2025 MarketSenseAI. Financial data for educational purposes.</span>
+            <span>© 2025 Stocker-Insight. Financial data for educational purposes.</span>
           </div>
           <p className="opacity-60">Powered by OpenAI & Replit</p>
         </div>
