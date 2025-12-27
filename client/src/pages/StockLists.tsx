@@ -1,67 +1,59 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { TrendingUp, TrendingDown, RefreshCw, Clock, BarChart3, Calendar } from "lucide-react";
+import { TrendingUp, TrendingDown, RefreshCw, Clock, BarChart3, Calendar, Wifi, WifiOff } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 
-interface Stock {
+interface NseStock {
   symbol: string;
-  price: string;
+  companyName: string;
+  lastPrice: number;
   change: number;
-  volume: string;
-  signal: string;
+  pChange: number;
+  open: number;
+  dayHigh: number;
+  dayLow: number;
+  previousClose: number;
+  totalTradedVolume: number;
+  totalTradedValue: number;
+  yearHigh: number;
+  yearLow: number;
+}
+
+interface NseData {
+  gainers: NseStock[];
+  losers: NseStock[];
+  lastUpdated: string;
 }
 
 export default function StockLists() {
-  const [bullishStocks, setBullishStocks] = useState<Stock[]>([]);
-  const [bearishStocks, setBearishStocks] = useState<Stock[]>([]);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  const bullishSymbols = ["TATASTEEL", "ADANIENT", "HINDALCO", "COALINDIA", "ONGC", "NTPC", "POWERGRID", "BPCL", "IOC", "GAIL"];
-  const bearishSymbols = ["TECHM", "WIPRO", "HCLTECH", "INFY", "TCS", "LTIM", "MPHASIS", "COFORGE", "PERSISTENT", "TATAELXSI"];
-  const bullishSignals = ["Breakout Pattern", "Golden Cross", "RSI Oversold Bounce", "MACD Bullish", "Volume Surge", "Support Bounce", "Cup & Handle", "Bull Flag", "Ascending Triangle", "Double Bottom"];
-  const bearishSignals = ["Breakdown Pattern", "Death Cross", "RSI Overbought", "MACD Bearish", "Volume Drop", "Resistance Rejection", "Head & Shoulders", "Bear Flag", "Descending Triangle", "Double Top"];
-
-  const generateData = () => {
-    setBullishStocks(bullishSymbols.map((symbol, i) => ({
-      symbol,
-      price: (Math.random() * 2000 + 200).toFixed(2),
-      change: parseFloat((Math.random() * 8 + 1).toFixed(2)),
-      volume: `${(Math.random() * 20 + 5).toFixed(1)}M`,
-      signal: bullishSignals[i % bullishSignals.length]
-    })));
-
-    setBearishStocks(bearishSymbols.map((symbol, i) => ({
-      symbol,
-      price: (Math.random() * 3000 + 500).toFixed(2),
-      change: parseFloat((-Math.random() * 8 - 0.5).toFixed(2)),
-      volume: `${(Math.random() * 15 + 3).toFixed(1)}M`,
-      signal: bearishSignals[i % bearishSignals.length]
-    })));
-
-    setLastUpdated(new Date());
-  };
+  const { data, isLoading, isError, refetch, isFetching } = useQuery<NseData>({
+    queryKey: ['/api/nse/gainers-losers'],
+    refetchInterval: 60000,
+    staleTime: 30000,
+  });
 
   useEffect(() => {
-    generateData();
-    const dataInterval = setInterval(generateData, 30000);
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => {
-      clearInterval(dataInterval);
-      clearInterval(timeInterval);
-    };
+    return () => clearInterval(timeInterval);
   }, []);
 
   const handleRefresh = () => {
-    setIsRefreshing(true);
-    generateData();
-    setTimeout(() => setIsRefreshing(false), 500);
+    queryClient.invalidateQueries({ queryKey: ['/api/nse/gainers-losers'] });
+    refetch();
+  };
+
+  const formatVolume = (vol: number) => {
+    if (vol >= 10000000) return `${(vol / 10000000).toFixed(2)} Cr`;
+    if (vol >= 100000) return `${(vol / 100000).toFixed(2)} L`;
+    if (vol >= 1000) return `${(vol / 1000).toFixed(1)}K`;
+    return vol?.toString() || '-';
   };
 
   return (
@@ -71,25 +63,27 @@ export default function StockLists() {
           <div>
             <h1 className="text-3xl font-black tracking-tight flex items-center gap-3" data-testid="text-stocks-title">
               <BarChart3 className="w-8 h-8 text-primary" />
-              STOCK SIGNALS
+              NSE TOP GAINERS & LOSERS
             </h1>
-            <p className="text-muted-foreground mt-1">
-              AI-detected bullish and bearish stock patterns
+            <p className="text-muted-foreground mt-1 flex items-center gap-2">
+              Live data from NSE India - NIFTY 50 Stocks
+              {isError ? (
+                <Badge variant="destructive" className="text-[10px]">
+                  <WifiOff className="w-3 h-3 mr-1" /> Offline
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30">
+                  <Wifi className="w-3 h-3 mr-1" /> Live
+                </Badge>
+              )}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-md px-3 py-2">
               <Calendar className="w-4 h-4 text-primary" />
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => {
-                  setSelectedDate(e.target.value);
-                  generateData();
-                }}
-                className="border-0 bg-transparent p-0 h-auto text-sm font-mono focus-visible:ring-0"
-                data-testid="input-date"
-              />
+              <span className="text-sm font-mono">
+                {currentTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </span>
             </div>
             <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-md px-3 py-2">
               <Clock className="w-4 h-4 text-primary" />
@@ -98,100 +92,161 @@ export default function StockLists() {
               </span>
               <Badge variant="outline" className="text-[10px] ml-1">IST</Badge>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <RefreshCw className="w-3 h-3" />
-              Last: {lastUpdated.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
-            </div>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={handleRefresh}
-              disabled={isRefreshing}
+              disabled={isFetching}
               data-testid="button-refresh-stocks"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border-2 border-emerald-500/30">
-            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-              <CardTitle className="text-lg font-bold flex items-center gap-2 text-emerald-400">
-                <TrendingUp className="w-5 h-5" />
-                BULLISH STOCKS
-              </CardTitle>
-              <Badge variant="default" className="text-xs">{bullishStocks.length} Stocks</Badge>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">SYMBOL</TableHead>
-                    <TableHead className="text-xs">PRICE</TableHead>
-                    <TableHead className="text-xs">SIGNAL</TableHead>
-                    <TableHead className="text-xs text-right">CHANGE</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bullishStocks.map((stock, idx) => (
-                    <TableRow key={stock.symbol} data-testid={`bullish-stock-${idx}`}>
-                      <TableCell className="font-bold">{stock.symbol}</TableCell>
-                      <TableCell className="font-mono">₹{stock.price}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
-                          {stock.signal}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className="font-mono font-bold text-emerald-400">+{stock.change}%</span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
 
-          <Card className="border-2 border-red-500/30">
-            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-              <CardTitle className="text-lg font-bold flex items-center gap-2 text-red-400">
-                <TrendingDown className="w-5 h-5" />
-                BEARISH STOCKS
-              </CardTitle>
-              <Badge variant="destructive" className="text-xs">{bearishStocks.length} Stocks</Badge>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">SYMBOL</TableHead>
-                    <TableHead className="text-xs">PRICE</TableHead>
-                    <TableHead className="text-xs">SIGNAL</TableHead>
-                    <TableHead className="text-xs text-right">CHANGE</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bearishStocks.map((stock, idx) => (
-                    <TableRow key={stock.symbol} data-testid={`bearish-stock-${idx}`}>
-                      <TableCell className="font-bold">{stock.symbol}</TableCell>
-                      <TableCell className="font-mono">₹{stock.price}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[10px] bg-red-500/10 border-red-500/30 text-red-400">
-                          {stock.signal}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className="font-mono font-bold text-red-400">{stock.change}%</span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[1, 2].map((i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader className="pb-2">
+                  <div className="h-6 bg-muted rounded w-40"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[1,2,3,4,5].map((j) => (
+                      <div key={j} className="h-10 bg-muted rounded"></div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : isError ? (
+          <Card className="border-destructive/50">
+            <CardContent className="py-10 text-center">
+              <WifiOff className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-bold mb-2">Unable to fetch NSE data</h3>
+              <p className="text-muted-foreground mb-4">
+                Please check your connection or try again later.
+              </p>
+              <Button onClick={handleRefresh}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
             </CardContent>
           </Card>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border-2 border-emerald-500/30">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-lg font-bold flex items-center gap-2 text-emerald-400">
+                  <TrendingUp className="w-5 h-5" />
+                  TOP GAINERS
+                </CardTitle>
+                <Badge variant="default" className="text-xs">{data?.gainers?.length || 0} Stocks</Badge>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-[500px] overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs sticky top-0 bg-card">#</TableHead>
+                        <TableHead className="text-xs sticky top-0 bg-card">SYMBOL</TableHead>
+                        <TableHead className="text-xs sticky top-0 bg-card">PRICE</TableHead>
+                        <TableHead className="text-xs sticky top-0 bg-card">VOLUME</TableHead>
+                        <TableHead className="text-xs text-right sticky top-0 bg-card">CHANGE</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data?.gainers?.map((stock, idx) => (
+                        <TableRow key={stock.symbol} data-testid={`gainer-stock-${idx}`}>
+                          <TableCell className="font-mono text-muted-foreground">{idx + 1}</TableCell>
+                          <TableCell>
+                            <div>
+                              <span className="font-bold">{stock.symbol}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono">₹{stock.lastPrice?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs">
+                            {formatVolume(stock.totalTradedVolume)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex flex-col items-end">
+                              <span className="font-mono font-bold text-emerald-400">
+                                +{stock.pChange?.toFixed(2)}%
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                +₹{stock.change?.toFixed(2)}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-red-500/30">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-lg font-bold flex items-center gap-2 text-red-400">
+                  <TrendingDown className="w-5 h-5" />
+                  TOP LOSERS
+                </CardTitle>
+                <Badge variant="destructive" className="text-xs">{data?.losers?.length || 0} Stocks</Badge>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-[500px] overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs sticky top-0 bg-card">#</TableHead>
+                        <TableHead className="text-xs sticky top-0 bg-card">SYMBOL</TableHead>
+                        <TableHead className="text-xs sticky top-0 bg-card">PRICE</TableHead>
+                        <TableHead className="text-xs sticky top-0 bg-card">VOLUME</TableHead>
+                        <TableHead className="text-xs text-right sticky top-0 bg-card">CHANGE</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data?.losers?.map((stock, idx) => (
+                        <TableRow key={stock.symbol} data-testid={`loser-stock-${idx}`}>
+                          <TableCell className="font-mono text-muted-foreground">{idx + 1}</TableCell>
+                          <TableCell>
+                            <div>
+                              <span className="font-bold">{stock.symbol}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono">₹{stock.lastPrice?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs">
+                            {formatVolume(stock.totalTradedVolume)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex flex-col items-end">
+                              <span className="font-mono font-bold text-red-400">
+                                {stock.pChange?.toFixed(2)}%
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                ₹{stock.change?.toFixed(2)}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {data?.lastUpdated && (
+          <p className="text-xs text-center text-muted-foreground">
+            Data source: NSE India | Last updated: {new Date(data.lastUpdated).toLocaleString('en-IN')}
+          </p>
+        )}
       </div>
     </Layout>
   );

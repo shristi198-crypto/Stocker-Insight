@@ -4,6 +4,9 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import OpenAI from "openai";
+import { NseIndia } from "stock-nse-india";
+
+const nseIndia = new NseIndia();
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -98,6 +101,41 @@ Note: Data should reflect the most recent 5-minute interval state if possible.
   app.get(api.news.list.path, async (req, res) => {
     const newsItems = await storage.getRecentNews(20);
     res.json(newsItems);
+  });
+
+  app.get("/api/nse/gainers-losers", async (req, res) => {
+    try {
+      const data = await nseIndia.getEquityStockIndices("NIFTY 50");
+      
+      if (!data || !data.data) {
+        return res.status(500).json({ message: "Failed to fetch NSE data" });
+      }
+
+      const stocks = data.data.map((stock: any) => ({
+        symbol: stock.symbol,
+        companyName: stock.meta?.companyName || stock.symbol,
+        lastPrice: stock.lastPrice,
+        change: stock.change,
+        pChange: stock.pChange,
+        open: stock.open,
+        dayHigh: stock.dayHigh,
+        dayLow: stock.dayLow,
+        previousClose: stock.previousClose,
+        totalTradedVolume: stock.totalTradedVolume,
+        totalTradedValue: stock.totalTradedValue,
+        yearHigh: stock.yearHigh,
+        yearLow: stock.yearLow,
+      }));
+
+      const sorted = [...stocks].sort((a, b) => b.pChange - a.pChange);
+      const gainers = sorted.filter(s => s.pChange > 0).slice(0, 20);
+      const losers = sorted.filter(s => s.pChange < 0).sort((a, b) => a.pChange - b.pChange).slice(0, 20);
+
+      res.json({ gainers, losers, lastUpdated: new Date().toISOString() });
+    } catch (err) {
+      console.error("NSE fetch failed:", err);
+      res.status(500).json({ message: "Failed to fetch NSE data" });
+    }
   });
 
   app.post(api.news.refresh.path, async (req, res) => {
