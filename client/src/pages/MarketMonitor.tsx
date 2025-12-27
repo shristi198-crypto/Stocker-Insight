@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, BookOpen, Users, Zap, Newspaper, ArrowRight } from "lucide-react";
+import { TrendingUp, Users, Zap, Building2, FileText } from "lucide-react";
 import { Layout } from "@/components/Layout";
-import { Link } from "wouter";
 
 export default function MarketMonitor() {
   const [magicStocks, setMagicStocks] = useState([
@@ -23,11 +21,12 @@ export default function MarketMonitor() {
     { symbol: "INFY", volume: "7.8M", change: "-1.1%" },
   ]);
 
-  const [orderBook, setOrderBook] = useState([
-    { price: "2450.50", qty: "1,200", type: "Bid" },
-    { price: "2450.45", qty: "850", type: "Bid" },
-    { price: "2451.00", qty: "500", type: "Ask" },
-    { price: "2451.10", qty: "1,100", type: "Ask" },
+  const [corporateEvents, setCorporateEvents] = useState([
+    { company: "TATASTEEL", type: "Award of Order", details: "Received order worth Rs. 450 Cr", time: "10:30 AM" },
+    { company: "L&T", type: "Receipt of Order", details: "Infrastructure project Rs. 1,200 Cr", time: "10:15 AM" },
+    { company: "BHEL", type: "Award of Order", details: "Power equipment order Rs. 890 Cr", time: "09:45 AM" },
+    { company: "RVNL", type: "Receipt of Order", details: "Railway project Rs. 567 Cr", time: "09:30 AM" },
+    { company: "HCC", type: "Award of Order", details: "Construction contract Rs. 234 Cr", time: "09:15 AM" },
   ]);
 
   const [activeTraders, setActiveTraders] = useState([
@@ -37,17 +36,24 @@ export default function MarketMonitor() {
   ]);
 
 
+  const companies = ["TATASTEEL", "L&T", "BHEL", "RVNL", "HCC", "IRCON", "NCC", "KEC", "KALPATPOWR", "PNC"];
+  const orderTypes = ["Award of Order", "Receipt of Order"];
+  const projects = [
+    "Infrastructure project", "Power equipment order", "Railway project", 
+    "Construction contract", "Transmission line order", "Road project",
+    "Metro rail order", "Bridge construction", "Industrial order"
+  ];
+
   useEffect(() => {
     const interval = setInterval(() => {
       // Dynamically update Magic Stocks based on other signals
       setMagicStocks(prev => {
         const topVolume = highVolumeStocks[0]?.symbol || "N/A";
-        const bestBid = orderBook.find(o => o.type === 'Bid')?.price || "N/A";
 
         return [
           { symbol: topVolume, score: "99/100", reason: "Volume Peak + Price Action" },
           { symbol: prev[1].symbol, score: "96/100", reason: "News Sentiment Analysis" },
-          { symbol: prev[2].symbol, score: "94/100", reason: `Order Flow Support at ₹${bestBid}` },
+          { symbol: prev[2].symbol, score: "94/100", reason: "Corporate Order Flow" },
           { symbol: prev[3].symbol, score: "91/100", reason: "Institutional Buy Signal" },
         ];
       });
@@ -64,24 +70,23 @@ export default function MarketMonitor() {
         };
       }));
 
-      // Simulate order book changes
-      setOrderBook(prev => prev.map(order => {
-        const priceChange = (Math.random() * 0.10 - 0.05).toFixed(2);
-        const newPrice = (parseFloat(order.price) + parseFloat(priceChange)).toFixed(2);
-        const newQty = Math.floor(parseInt(order.qty.replace(/,/g, '')) + (Math.random() * 100 - 50));
-        return {
-          ...order,
-          price: newPrice,
-          qty: Math.max(100, newQty).toLocaleString()
+      // Simulate new corporate events
+      setCorporateEvents(prev => {
+        const newEvent = {
+          company: companies[Math.floor(Math.random() * companies.length)],
+          type: orderTypes[Math.floor(Math.random() * orderTypes.length)],
+          details: `${projects[Math.floor(Math.random() * projects.length)]} Rs. ${Math.floor(Math.random() * 2000 + 100)} Cr`,
+          time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
         };
-      }));
+        return [newEvent, ...prev.slice(0, 4)];
+      });
 
       // Update trader activity
       setActiveTraders(prev => prev.map(trader => ({
         ...trader,
         tradeCount: trader.tradeCount + Math.floor(Math.random() * 3)
       })));
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, []);
@@ -99,7 +104,7 @@ export default function MarketMonitor() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* 4-Magic List */}
         <Card className="hover-elevate bg-primary/5 border-primary/20">
           <CardHeader className="flex flex-row items-center justify-between gap-2">
@@ -118,27 +123,6 @@ export default function MarketMonitor() {
                 <p className="text-[10px] text-muted-foreground uppercase">{stock.reason}</p>
               </div>
             ))}
-          </CardContent>
-        </Card>
-
-        {/* News Link Card */}
-        <Card className="hover-elevate">
-          <CardHeader className="flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Newspaper className="w-4 h-4 text-primary" />
-              AI NEWS FEED
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              Real-time news with AI sentiment analysis for market insights.
-            </p>
-            <Link href="/news">
-              <Button variant="outline" size="sm" className="w-full" data-testid="link-news-page">
-                View Full News Feed
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
           </CardContent>
         </Card>
 
@@ -167,29 +151,40 @@ export default function MarketMonitor() {
           </CardContent>
         </Card>
 
-        {/* Order Book */}
-        <Card className="hover-elevate">
+        {/* BSE Corporate Events */}
+        <Card className="hover-elevate lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-primary" />
-              LIVE ORDER BOOK
+              <Building2 className="w-4 h-4 text-primary" />
+              BSE CORPORATE EVENTS
             </CardTitle>
+            <Badge variant="outline" className="text-[10px]">Award/Receipt of Order</Badge>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-[10px] h-auto py-1">PRICE</TableHead>
-                  <TableHead className="text-[10px] h-auto py-1 text-right">QTY</TableHead>
+                  <TableHead className="text-[10px] h-auto py-1">COMPANY</TableHead>
+                  <TableHead className="text-[10px] h-auto py-1">TYPE</TableHead>
+                  <TableHead className="text-[10px] h-auto py-1">DETAILS</TableHead>
+                  <TableHead className="text-[10px] h-auto py-1 text-right">TIME</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orderBook.map((order, i) => (
-                  <TableRow key={i}>
-                    <TableCell className={`text-xs font-mono py-1 ${order.type === 'Bid' ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {order.price}
+                {corporateEvents.map((event, i) => (
+                  <TableRow key={i} data-testid={`corporate-event-${i}`}>
+                    <TableCell className="text-xs font-bold py-2">{event.company}</TableCell>
+                    <TableCell className="py-2">
+                      <Badge 
+                        variant={event.type === "Award of Order" ? "default" : "outline"} 
+                        className="text-[10px]"
+                      >
+                        <FileText className="w-3 h-3 mr-1" />
+                        {event.type}
+                      </Badge>
                     </TableCell>
-                    <TableCell className="text-xs font-mono py-1 text-right">{order.qty}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground py-2">{event.details}</TableCell>
+                    <TableCell className="text-xs font-mono text-right py-2">{event.time}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
