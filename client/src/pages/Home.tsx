@@ -1,5 +1,4 @@
 import { Layout } from "@/components/Layout";
-import { StockSearch } from "@/components/StockSearch";
 import { RecentAnalyses } from "@/components/RecentAnalyses";
 import { CustomizableDashboard } from "@/components/DashboardWidgets";
 import { useAnalyses } from "@/hooks/use-analysis";
@@ -9,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { useNews } from "@/hooks/use-news";
+import bullBearImage from "@assets/generated_images/bull_and_bear_market_battle.png";
 
 function NewsSummaryCard() {
   const { data: news } = useNews();
@@ -58,23 +58,22 @@ export default function Home() {
   return (
     <Layout>
       <div className="space-y-12">
-        {/* Hero Section */}
-        <div className="text-center space-y-6 w-full max-w-3xl mx-auto animate-in fade-in zoom-in duration-500 pt-8">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
-            Smarter Investing with{" "}
+        {/* Hero Section with Bull & Bear Image */}
+        <div className="text-center space-y-6 w-full animate-in fade-in zoom-in duration-500 pt-4">
+          <h1 className="text-3xl md:text-5xl tracking-tight text-foreground">
+            NEW VISION OF STOCK MARKET WITH{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-yellow-300">
-              AI Insights
+              STOCKERSS
             </span>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Experience the power of <span className="text-primary font-bold italic">Stocker-Insight</span>. 
-            Instant fundamental & technical analysis for any Indian stock. 
-          </p>
-        </div>
-
-        {/* Search Component */}
-        <div className="w-full max-w-3xl mx-auto animate-in slide-in-from-bottom-8 duration-700 delay-150">
-          <StockSearch />
+          <div className="w-full max-w-5xl mx-auto overflow-hidden rounded-lg">
+            <img 
+              src={bullBearImage} 
+              alt="Bull and Bear Market Battle" 
+              className="w-full h-auto object-cover"
+              data-testid="img-bull-bear"
+            />
+          </div>
         </div>
 
         {/* Customizable Dashboard Widgets */}
