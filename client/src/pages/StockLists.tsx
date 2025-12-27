@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, TrendingDown, RefreshCw, Clock, BarChart3 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { TrendingUp, TrendingDown, RefreshCw, Clock, BarChart3, Calendar } from "lucide-react";
 
 interface Stock {
   symbol: string;
@@ -19,6 +20,7 @@ export default function StockLists() {
   const [bearishStocks, setBearishStocks] = useState<Stock[]>([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   const bullishSymbols = ["TATASTEEL", "ADANIENT", "HINDALCO", "COALINDIA", "ONGC", "NTPC", "POWERGRID", "BPCL", "IOC", "GAIL"];
   const bearishSymbols = ["TECHM", "WIPRO", "HCLTECH", "INFY", "TCS", "LTIM", "MPHASIS", "COFORGE", "PERSISTENT", "TATAELXSI"];
@@ -70,7 +72,20 @@ export default function StockLists() {
               AI-detected bullish and bearish stock patterns
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-md px-3 py-2">
+              <Calendar className="w-4 h-4 text-primary" />
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  generateData();
+                }}
+                className="border-0 bg-transparent p-0 h-auto text-sm font-mono focus-visible:ring-0"
+                data-testid="input-date"
+              />
+            </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="w-4 h-4" />
               Updated: {lastUpdated.toLocaleTimeString()}
