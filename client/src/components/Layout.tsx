@@ -153,8 +153,19 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
         {children}
       </main>
 
-      <footer className="border-t-2 border-primary/50 py-8 mt-12 bg-secondary/20">
-        <div className="container max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground gap-4">
+      <footer className="border-t-2 border-primary/50 mt-12 bg-secondary/20">
+        {/* Running Tagline */}
+        <div className="overflow-hidden bg-primary/10 py-2 border-b border-primary/30">
+          <div className="animate-marquee whitespace-nowrap flex gap-16">
+            <span className="text-primary font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
+            <span className="text-amber-400 font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
+            <span className="text-yellow-300 font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
+            <span className="text-primary font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
+            <span className="text-amber-400 font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
+            <span className="text-yellow-300 font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
+          </div>
+        </div>
+        <div className="container max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground gap-4">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-primary" />
             <span>2025 STOCKERSS. Financial data for educational purposes.</span>
