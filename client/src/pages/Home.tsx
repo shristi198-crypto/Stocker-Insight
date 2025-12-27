@@ -149,9 +149,8 @@ export default function Home() {
         {/* Hero Section with Bull & Bear Image */}
         <div className="text-center space-y-6 w-full animate-in fade-in zoom-in duration-500 pt-4">
           <h1 className="text-3xl md:text-5xl tracking-tight text-foreground">
-            NEW VISION OF STOCK MARKET WITH{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-yellow-300">
-              STOCKERSS
+              NEW VISION OF STOCK MARKET
             </span>
           </h1>
           <div className="w-full max-w-5xl mx-auto overflow-hidden rounded-lg">
