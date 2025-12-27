@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, Zap, Building2, FileText, BarChart3 } from "lucide-react";
+import { TrendingUp, Zap, Building2, FileText, BarChart3, Newspaper, Activity, Building, TrendingDown } from "lucide-react";
 import { Layout } from "@/components/Layout";
 
 interface BidAskLevel {
@@ -17,12 +17,22 @@ interface IndexBidData {
   levels: BidAskLevel[];
 }
 
+interface MagicStock {
+  symbol: string;
+  score: number;
+  signals: string[];
+  hasNews: boolean;
+  hasVolume: boolean;
+  hasCorporate: boolean;
+  hasPrice: boolean;
+}
+
 export default function MarketMonitor() {
-  const [magicStocks, setMagicStocks] = useState([
-    { symbol: "TATASTEEL", score: "98/100", reason: "Breakout Volume + News" },
-    { symbol: "ADANIENT", score: "95/100", reason: "Institutional Accumulation" },
-    { symbol: "HDFCBANK", score: "92/100", reason: "Active Trader Interest" },
-    { symbol: "ZOMATO", score: "89/100", reason: "Earnings Surprise Alert" },
+  const [magicStocks, setMagicStocks] = useState<MagicStock[]>([
+    { symbol: "TATASTEEL", score: 100, signals: ["News", "Volume", "Corporate", "Price"], hasNews: true, hasVolume: true, hasCorporate: true, hasPrice: true },
+    { symbol: "L&T", score: 75, signals: ["Corporate", "Volume", "Price"], hasNews: false, hasVolume: true, hasCorporate: true, hasPrice: true },
+    { symbol: "RELIANCE", score: 75, signals: ["News", "Volume", "Price"], hasNews: true, hasVolume: true, hasCorporate: false, hasPrice: true },
+    { symbol: "HDFCBANK", score: 50, signals: ["Volume", "Price"], hasNews: false, hasVolume: true, hasCorporate: false, hasPrice: true },
   ]);
 
   const [highVolumeStocks, setHighVolumeStocks] = useState([
@@ -93,19 +103,78 @@ export default function MarketMonitor() {
     "Metro rail order", "Bridge construction", "Industrial order"
   ];
 
+  const [newsStocks] = useState([
+    { symbol: "TATASTEEL", sentiment: "bullish" },
+    { symbol: "RELIANCE", sentiment: "bullish" },
+    { symbol: "ADANIENT", sentiment: "bullish" },
+    { symbol: "ICICIBANK", sentiment: "neutral" },
+    { symbol: "BHARTIARTL", sentiment: "bullish" },
+  ]);
+
+  const [priceMovers] = useState([
+    { symbol: "TATASTEEL", change: 3.2 },
+    { symbol: "RELIANCE", change: 1.8 },
+    { symbol: "L&T", change: 2.1 },
+    { symbol: "HDFCBANK", change: 1.5 },
+    { symbol: "ADANIENT", change: 2.8 },
+  ]);
+
+  const computeMagicList = () => {
+    const stockScores: { [key: string]: MagicStock } = {};
+
+    highVolumeStocks.forEach(stock => {
+      if (!stockScores[stock.symbol]) {
+        stockScores[stock.symbol] = { symbol: stock.symbol, score: 0, signals: [], hasNews: false, hasVolume: false, hasCorporate: false, hasPrice: false };
+      }
+      stockScores[stock.symbol].hasVolume = true;
+      stockScores[stock.symbol].signals.push("Volume");
+      stockScores[stock.symbol].score += 25;
+    });
+
+    corporateEvents.forEach(event => {
+      if (!stockScores[event.company]) {
+        stockScores[event.company] = { symbol: event.company, score: 0, signals: [], hasNews: false, hasVolume: false, hasCorporate: false, hasPrice: false };
+      }
+      if (!stockScores[event.company].hasCorporate) {
+        stockScores[event.company].hasCorporate = true;
+        stockScores[event.company].signals.push("Corporate");
+        stockScores[event.company].score += 25;
+      }
+    });
+
+    newsStocks.forEach(news => {
+      if (!stockScores[news.symbol]) {
+        stockScores[news.symbol] = { symbol: news.symbol, score: 0, signals: [], hasNews: false, hasVolume: false, hasCorporate: false, hasPrice: false };
+      }
+      if (!stockScores[news.symbol].hasNews && news.sentiment === "bullish") {
+        stockScores[news.symbol].hasNews = true;
+        stockScores[news.symbol].signals.push("News");
+        stockScores[news.symbol].score += 25;
+      }
+    });
+
+    priceMovers.forEach(mover => {
+      if (!stockScores[mover.symbol]) {
+        stockScores[mover.symbol] = { symbol: mover.symbol, score: 0, signals: [], hasNews: false, hasVolume: false, hasCorporate: false, hasPrice: false };
+      }
+      if (!stockScores[mover.symbol].hasPrice && mover.change > 1) {
+        stockScores[mover.symbol].hasPrice = true;
+        stockScores[mover.symbol].signals.push("Price");
+        stockScores[mover.symbol].score += 25;
+      }
+    });
+
+    const sorted = Object.values(stockScores)
+      .filter(s => s.score >= 50)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4);
+
+    return sorted;
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
-      // Dynamically update Magic Stocks based on other signals
-      setMagicStocks(prev => {
-        const topVolume = highVolumeStocks[0]?.symbol || "N/A";
-
-        return [
-          { symbol: topVolume, score: "99/100", reason: "Volume Peak + Price Action" },
-          { symbol: prev[1].symbol, score: "96/100", reason: "News Sentiment Analysis" },
-          { symbol: prev[2].symbol, score: "94/100", reason: "Corporate Order Flow" },
-          { symbol: prev[3].symbol, score: "91/100", reason: "Institutional Buy Signal" },
-        ];
-      });
+      setMagicStocks(computeMagicList());
 
       // Simulate price changes in high volume stocks
       setHighVolumeStocks(prev => prev.map(stock => {
@@ -165,15 +234,45 @@ export default function MarketMonitor() {
               <Zap className="w-4 h-4 text-primary" />
               4-MAGIC LIST
             </CardTitle>
+            <Badge variant="outline" className="text-[10px]">Combined Signals</Badge>
           </CardHeader>
           <CardContent className="space-y-4">
-            {magicStocks.map((stock) => (
-              <div key={stock.symbol} className="space-y-1">
+            {magicStocks.map((stock, idx) => (
+              <div key={stock.symbol} className="space-y-2 pb-3 border-b border-primary/10 last:border-0 last:pb-0" data-testid={`magic-stock-${idx}`}>
                 <div className="flex justify-between items-center">
                   <p className="text-sm font-black">{stock.symbol}</p>
-                  <Badge variant="outline" className="text-[10px] bg-primary/10 border-primary/20">{stock.score}</Badge>
+                  <Badge variant="default" className="text-[10px] bg-primary/20 text-primary border-primary/30">{stock.score}/100</Badge>
                 </div>
-                <p className="text-[10px] text-muted-foreground uppercase">{stock.reason}</p>
+                <div className="flex flex-wrap gap-1">
+                  <Badge 
+                    variant="outline" 
+                    className={`text-[9px] ${stock.hasNews ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : 'bg-muted/30 border-muted text-muted-foreground opacity-40'}`}
+                  >
+                    <Newspaper className="w-2.5 h-2.5 mr-1" />
+                    News
+                  </Badge>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-[9px] ${stock.hasVolume ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-muted/30 border-muted text-muted-foreground opacity-40'}`}
+                  >
+                    <Activity className="w-2.5 h-2.5 mr-1" />
+                    Volume
+                  </Badge>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-[9px] ${stock.hasCorporate ? 'bg-purple-500/20 border-purple-500/40 text-purple-400' : 'bg-muted/30 border-muted text-muted-foreground opacity-40'}`}
+                  >
+                    <Building className="w-2.5 h-2.5 mr-1" />
+                    Corporate
+                  </Badge>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-[9px] ${stock.hasPrice ? 'bg-orange-500/20 border-orange-500/40 text-orange-400' : 'bg-muted/30 border-muted text-muted-foreground opacity-40'}`}
+                  >
+                    <TrendingUp className="w-2.5 h-2.5 mr-1" />
+                    Price
+                  </Badge>
+                </div>
               </div>
             ))}
           </CardContent>
