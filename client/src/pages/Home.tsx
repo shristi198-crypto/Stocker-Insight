@@ -1,6 +1,7 @@
 import { Layout } from "@/components/Layout";
 import { StockSearch } from "@/components/StockSearch";
 import { RecentAnalyses } from "@/components/RecentAnalyses";
+import { CustomizableDashboard } from "@/components/DashboardWidgets";
 import { useAnalyses } from "@/hooks/use-analysis";
 import { Loader2, Newspaper, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,24 +57,29 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-16">
+      <div className="space-y-12">
         {/* Hero Section */}
-        <div className="text-center space-y-6 w-full max-w-3xl animate-in fade-in zoom-in duration-500">
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground">
-            Smarter Investing with <br />
+        <div className="text-center space-y-6 w-full max-w-3xl mx-auto animate-in fade-in zoom-in duration-500 pt-8">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
+            Smarter Investing with{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-yellow-300">
               AI Insights
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Experience the power of <span className="text-primary font-bold italic">Stocker-Insight</span>. 
             Instant fundamental & technical analysis for any Indian stock. 
           </p>
         </div>
 
         {/* Search Component */}
-        <div className="w-full animate-in slide-in-from-bottom-8 duration-700 delay-150">
+        <div className="w-full max-w-3xl mx-auto animate-in slide-in-from-bottom-8 duration-700 delay-150">
           <StockSearch />
+        </div>
+
+        {/* Customizable Dashboard Widgets */}
+        <div className="w-full animate-in slide-in-from-bottom-8 duration-700 delay-200">
+          <CustomizableDashboard />
         </div>
 
         {/* Recent Analyses and News Teaser */}
