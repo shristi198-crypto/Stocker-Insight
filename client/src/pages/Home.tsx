@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { CustomizableDashboard } from "@/components/DashboardWidgets";
+import { HistoricalChart } from "@/components/HistoricalChart";
 import { Newspaper, ArrowRight, TrendingUp, TrendingDown, Building2, Globe } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -161,6 +162,11 @@ export default function Home() {
               data-testid="img-bull-bear"
             />
           </div>
+        </div>
+
+        {/* Historical Chart with Timeframes */}
+        <div className="w-full animate-in slide-in-from-bottom-8 duration-700 delay-150">
+          <HistoricalChart />
         </div>
 
         {/* Customizable Dashboard Widgets */}
