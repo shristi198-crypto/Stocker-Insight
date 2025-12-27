@@ -1,44 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* White & Purple Financial Theme */
-  --background: 270 50% 98%;    /* Very light purple/white */
-  --foreground: 270 50% 10%;    /* Dark purple text */
+  /* Golden & Black Luxury Theme */
+  --background: 0 0% 4%;           /* Rich black #0A0A0A */
+  --foreground: 0 0% 100%;         /* White text */
 
-  --card: 0 0% 100%;            /* Pure white cards */
-  --card-foreground: 270 50% 10%;
+  --card: 0 0% 10%;                /* Elevated surface #1A1A1A */
+  --card-foreground: 0 0% 100%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 270 50% 10%;
+  --popover: 0 0% 10%;
+  --popover-foreground: 0 0% 100%;
 
-  --primary: 270 70% 50%;       /* Vibrant Purple */
-  --primary-foreground: 0 0% 100%;
+  --primary: 43 74% 52%;           /* Golden #D4AF37 */
+  --primary-foreground: 0 0% 4%;   /* Black text on gold */
 
-  --secondary: 270 30% 92%;
-  --secondary-foreground: 270 50% 20%;
+  --secondary: 0 0% 16%;           /* Dark gray #2A2A2A */
+  --secondary-foreground: 0 0% 90%;
 
-  --muted: 270 20% 90%;
-  --muted-foreground: 270 20% 40%;
+  --muted: 0 0% 20%;
+  --muted-foreground: 0 0% 63%;    /* Gray #A0A0A0 */
 
-  --accent: 270 70% 50%;
-  --accent-foreground: 0 0% 100%;
+  --accent: 43 74% 52%;            /* Golden */
+  --accent-foreground: 0 0% 4%;
 
-  --destructive: 0 84.2% 50%;   /* Pure Red for Bearish */
+  --destructive: 0 84% 60%;        /* Red for losses */
   --destructive-foreground: 0 0% 100%;
 
-  --border: 270 30% 90%;
-  --input: 270 30% 90%;
-  --ring: 270 70% 50%;
+  --border: 43 50% 30%;            /* Subtle golden border */
+  --input: 0 0% 16%;
+  --ring: 43 74% 52%;
 
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 
-  /* Chart Colors */
-  --bullish: 142 70% 45%;       /* Professional Green */
-  --bearish: 0 84% 50%;         /* Professional Red */
+  /* Financial Colors */
+  --bullish: 160 84% 39%;          /* Emerald green #10B981 */
+  --bearish: 0 84% 60%;            /* Red #EF4444 */
+  --gold: 43 74% 52%;              /* Golden #D4AF37 */
+  --gold-hover: 45 76% 62%;        /* Lighter gold #E5C158 */
+  --gold-subtle: 43 60% 45%;       /* Darker gold #B89230 */
 
   /* Custom Fonts */
   --font-display: 'Plus Jakarta Sans', sans-serif;
@@ -51,7 +54,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
   }
   h1, h2, h3, h4, h5, h6 {
@@ -63,12 +66,29 @@
   }
 }
 
+/* Golden accent utilities */
+.text-gold {
+  color: hsl(var(--gold));
+}
+.bg-gold {
+  background-color: hsl(var(--gold));
+}
+.border-gold {
+  border-color: hsl(var(--gold));
+}
+.text-bullish {
+  color: hsl(var(--bullish));
+}
+.text-bearish {
+  color: hsl(var(--bearish));
+}
+
 /* Markdown Styles */
 .prose {
   @apply text-foreground/90 max-w-none;
 }
 .prose h1 {
-  @apply text-3xl font-bold mb-6 mt-8 text-primary border-b border-border/50 pb-2;
+  @apply text-3xl font-bold mb-6 mt-8 text-primary border-b border-primary/30 pb-2;
 }
 .prose h2 {
   @apply text-2xl font-semibold mb-4 mt-8 text-foreground;
@@ -86,7 +106,7 @@
   @apply list-decimal list-outside ml-6 mb-4 space-y-2 text-muted-foreground;
 }
 .prose strong {
-  @apply font-semibold text-foreground;
+  @apply font-semibold text-primary;
 }
 .prose blockquote {
   @apply border-l-4 border-primary/50 pl-4 italic text-muted-foreground my-6 bg-card/50 py-2 pr-4 rounded-r-lg;
@@ -95,8 +115,28 @@
   @apply w-full mb-6 border-collapse text-sm;
 }
 .prose th {
-  @apply text-left p-3 border-b border-border font-semibold text-foreground bg-secondary/30;
+  @apply text-left p-3 border-b border-primary/30 font-semibold text-primary bg-secondary/30;
 }
 .prose td {
   @apply p-3 border-b border-border/50 text-muted-foreground;
+}
+
+/* Golden shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent, hsl(var(--gold) / 0.3), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Real-time pulse */
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--gold) / 0.4); }
+  50% { box-shadow: 0 0 0 4px hsl(var(--gold) / 0); }
+}
+.pulse-gold {
+  animation: pulse-gold 2s infinite;
 }

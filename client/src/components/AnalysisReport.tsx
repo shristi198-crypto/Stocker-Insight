@@ -32,8 +32,8 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
 
   return (
     <div className="w-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6">
-      <div className="bg-card border border-border rounded-2xl p-8 md:p-10 relative overflow-hidden shadow-sm">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+      <div className="bg-card border-2 border-primary/30 rounded-2xl p-8 md:p-10 relative overflow-hidden shadow-sm">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
           <div>
@@ -65,7 +65,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
 
       {chartData && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-sm overflow-hidden min-h-[350px]">
+          <div className="bg-card border-2 border-primary/30 rounded-2xl p-4 shadow-sm overflow-hidden min-h-[350px]">
             <Plot
               data={[
                 {
@@ -73,7 +73,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
                   y: chartData.revenue_values || [],
                   type: 'bar',
                   name: 'Revenue',
-                  marker: { color: '#9333ea' }
+                  marker: { color: '#D4AF37' }
                 },
                 {
                   x: chartData.revenue_years || [],
@@ -99,7 +99,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
             />
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-sm overflow-hidden min-h-[350px]">
+          <div className="bg-card border-2 border-primary/30 rounded-2xl p-4 shadow-sm overflow-hidden min-h-[350px]">
             <Plot
               data={[
                 {
@@ -108,7 +108,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
                   mode: 'lines',
                   fill: 'tozeroy',
                   name: 'Price',
-                  line: { color: '#3b82f6' }
+                  line: { color: '#D4AF37' }
                 }
               ]}
               layout={{
@@ -124,7 +124,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
             />
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm overflow-hidden min-h-[350px] flex flex-col justify-center">
+          <div className="bg-card border-2 border-primary/30 rounded-2xl p-6 shadow-sm overflow-hidden min-h-[350px] flex flex-col justify-center">
             <h3 className="text-lg font-bold mb-4 text-center">Fundamental Metrics</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-secondary/20 rounded-xl border border-border/50 text-center">
@@ -152,8 +152,8 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
         </div>
       )}
 
-      <div className="bg-white border border-border rounded-2xl p-8 md:p-12 shadow-sm relative">
-        <div className="prose prose-lg max-w-none prose-headings:text-primary prose-strong:text-emerald-600">
+      <div className="bg-card border-2 border-primary/30 rounded-2xl p-8 md:p-12 shadow-sm relative">
+        <div className="prose prose-lg max-w-none prose-headings:text-primary prose-strong:text-primary">
           <ReactMarkdown>{cleanReport}</ReactMarkdown>
         </div>
         

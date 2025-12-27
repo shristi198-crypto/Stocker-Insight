@@ -14,7 +14,7 @@ export default function Home() {
         <div className="text-center space-y-6 w-full max-w-3xl animate-in fade-in zoom-in duration-500">
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground">
             Smarter Investing with <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-400 to-teal-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-yellow-300">
               AI Insights
             </span>
           </h1>
