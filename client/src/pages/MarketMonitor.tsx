@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Newspaper, TrendingUp, BookOpen, Users, Zap } from "lucide-react";
+import { Layout } from "@/components/Layout";
 
 export default function MarketMonitor() {
   const [magicStocks, setMagicStocks] = useState([
@@ -90,18 +91,19 @@ export default function MarketMonitor() {
   }, []);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-black tracking-tighter uppercase italic text-foreground">
-          Market Monitor
-        </h1>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Live Connection Active</span>
+    <Layout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-black tracking-tighter uppercase italic text-foreground">
+            Market Monitor
+          </h1>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Live Connection Active</span>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* 4-Magic List */}
         <Card className="hover-elevate bg-primary/5 border-primary/20">
           <CardHeader className="flex flex-row items-center justify-between gap-2">
@@ -218,7 +220,8 @@ export default function MarketMonitor() {
             ))}
           </CardContent>
         </Card>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }
