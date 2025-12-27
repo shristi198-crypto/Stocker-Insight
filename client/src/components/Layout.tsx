@@ -69,7 +69,7 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
     });
   };
 
-  const isDetailPage = location !== "/" && location !== "/stocks" && location !== "/monitor" && location !== "/commodities";
+  const isDetailPage = location !== "/" && location !== "/stocks" && location !== "/monitor" && location !== "/commodities" && location !== "/news";
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-sans">
@@ -102,6 +102,9 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
               </Link>
               <Link href="/monitor" className={`text-sm font-medium transition-colors ${location === '/monitor' ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
                 Monitor
+              </Link>
+              <Link href="/news" className={`text-sm font-medium transition-colors ${location === '/news' ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
+                News
               </Link>
               <Link href="/stocks" className={`text-sm font-medium transition-colors ${location === '/stocks' ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
                 Stocks

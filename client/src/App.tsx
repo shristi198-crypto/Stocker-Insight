@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import AnalysisPage from "./pages/AnalysisPage";
 import StockLists from "./pages/StockLists";
 import NewsPage from "./pages/NewsPage";
+import News from "./pages/News";
 import MarketMonitor from "./pages/MarketMonitor";
 import CommoditiesPage from "./pages/CommoditiesPage";
 
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/analysis/:id" component={AnalysisPage} />
       <Route path="/stocks" component={StockLists} />
+      <Route path="/news" component={News} />
       <Route path="/news/:id" component={NewsPage} />
       <Route path="/monitor" component={MarketMonitor} />
       <Route path="/commodities" component={CommoditiesPage} />

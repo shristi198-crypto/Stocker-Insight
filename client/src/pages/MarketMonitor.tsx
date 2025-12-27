@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, BookOpen, Users, Zap } from "lucide-react";
+import { TrendingUp, BookOpen, Users, Zap, Newspaper, ArrowRight } from "lucide-react";
 import { Layout } from "@/components/Layout";
-import { NewsFeed } from "@/components/NewsFeed";
+import { Link } from "wouter";
 
 export default function MarketMonitor() {
   const [magicStocks, setMagicStocks] = useState([
@@ -120,8 +121,26 @@ export default function MarketMonitor() {
           </CardContent>
         </Card>
 
-        {/* Market News - AI Sentiment */}
-        <NewsFeed compact />
+        {/* News Link Card */}
+        <Card className="hover-elevate">
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Newspaper className="w-4 h-4 text-primary" />
+              AI NEWS FEED
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Real-time news with AI sentiment analysis for market insights.
+            </p>
+            <Link href="/news">
+              <Button variant="outline" size="sm" className="w-full" data-testid="link-news-page">
+                View Full News Feed
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
         {/* High Volume */}
         <Card className="hover-elevate">
