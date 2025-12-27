@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useCreateAnalysis } from "@/hooks/use-analysis";
 import { useToast } from "@/hooks/use-toast";
-import stockerLogo from "@assets/Dark_Green_Modern_Illustrative_Finance_Service_Logo_1766851427499.png";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -90,7 +89,7 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
                 </Button>
               )}
               <Link href="/" className="flex items-center gap-2 group">
-                <img src={stockerLogo} alt="Stocker" className="h-10 w-auto" />
+                <span className="font-black text-xl text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-yellow-300 uppercase tracking-tight">STOCKERSS</span>
               </Link>
             </div>
 
@@ -157,8 +156,8 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
       <footer className="border-t-2 border-primary/50 py-8 mt-12 bg-secondary/20">
         <div className="container max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground gap-4">
           <div className="flex items-center gap-2">
-            <img src={stockerLogo} alt="Stocker" className="h-6 w-auto" />
-            <span>2025 Stocker Insight. Financial data for educational purposes.</span>
+            <BarChart3 className="w-4 h-4 text-primary" />
+            <span>2025 STOCKERSS. Financial data for educational purposes.</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-bullish animate-pulse"></span>
