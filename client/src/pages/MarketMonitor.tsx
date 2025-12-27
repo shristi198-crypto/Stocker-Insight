@@ -11,6 +11,12 @@ interface BidAskLevel {
   askQty: number;
 }
 
+interface IndexBidData {
+  name: string;
+  basePrice: number;
+  levels: BidAskLevel[];
+}
+
 export default function MarketMonitor() {
   const [magicStocks, setMagicStocks] = useState([
     { symbol: "TATASTEEL", score: "98/100", reason: "Breakout Volume + News" },
@@ -35,13 +41,47 @@ export default function MarketMonitor() {
     { company: "HCC", type: "Award of Order", details: "Construction contract Rs. 234 Cr", time: "09:15 AM" },
   ]);
 
-  const [bidAskData, setBidAskData] = useState<BidAskLevel[]>([
-    { price: 22150, bidQty: 4500, askQty: 3200 },
-    { price: 22145, bidQty: 6800, askQty: 2100 },
-    { price: 22140, bidQty: 8200, askQty: 1500 },
-    { price: 22135, bidQty: 5600, askQty: 4800 },
-    { price: 22130, bidQty: 3200, askQty: 7200 },
-    { price: 22125, bidQty: 2100, askQty: 9500 },
+  const [allIndexBidData, setAllIndexBidData] = useState<IndexBidData[]>([
+    {
+      name: "SENSEX",
+      basePrice: 72500,
+      levels: [
+        { price: 72520, bidQty: 5200, askQty: 3800 },
+        { price: 72510, bidQty: 7100, askQty: 2500 },
+        { price: 72500, bidQty: 8500, askQty: 1800 },
+        { price: 72490, bidQty: 6200, askQty: 5100 },
+      ]
+    },
+    {
+      name: "NIFTY 50",
+      basePrice: 22000,
+      levels: [
+        { price: 22015, bidQty: 4500, askQty: 3200 },
+        { price: 22010, bidQty: 6800, askQty: 2100 },
+        { price: 22005, bidQty: 8200, askQty: 1500 },
+        { price: 22000, bidQty: 5600, askQty: 4800 },
+      ]
+    },
+    {
+      name: "NIFTY BANK",
+      basePrice: 48000,
+      levels: [
+        { price: 48030, bidQty: 3800, askQty: 4200 },
+        { price: 48020, bidQty: 5500, askQty: 3100 },
+        { price: 48010, bidQty: 7200, askQty: 2400 },
+        { price: 48000, bidQty: 4900, askQty: 5800 },
+      ]
+    },
+    {
+      name: "NIFTY IT",
+      basePrice: 35000,
+      levels: [
+        { price: 35025, bidQty: 2900, askQty: 3500 },
+        { price: 35020, bidQty: 4200, askQty: 2800 },
+        { price: 35015, bidQty: 5800, askQty: 1900 },
+        { price: 35010, bidQty: 3600, askQty: 4400 },
+      ]
+    },
   ]);
 
 
@@ -90,11 +130,14 @@ export default function MarketMonitor() {
         return [newEvent, ...prev.slice(0, 4)];
       });
 
-      // Update bid/ask data
-      setBidAskData(prev => prev.map(level => ({
-        price: level.price + (Math.random() - 0.5) * 2,
-        bidQty: Math.max(1000, level.bidQty + Math.floor((Math.random() - 0.5) * 1000)),
-        askQty: Math.max(1000, level.askQty + Math.floor((Math.random() - 0.5) * 1000)),
+      // Update bid/ask data for all indices
+      setAllIndexBidData(prev => prev.map(index => ({
+        ...index,
+        levels: index.levels.map(level => ({
+          price: level.price + (Math.random() - 0.5) * 2,
+          bidQty: Math.max(1000, level.bidQty + Math.floor((Math.random() - 0.5) * 1000)),
+          askQty: Math.max(1000, level.askQty + Math.floor((Math.random() - 0.5) * 1000)),
+        }))
       })));
     }, 5000);
 
@@ -202,66 +245,69 @@ export default function MarketMonitor() {
           </CardContent>
         </Card>
 
-        {/* Bid Chart */}
-        <Card className="hover-elevate">
-          <CardHeader className="flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              NIFTY 50 BID CHART
-            </CardTitle>
-            <Badge variant="outline" className="text-[10px]">Live</Badge>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between text-[10px] text-muted-foreground mb-2">
-              <span>BID QTY</span>
-              <span>PRICE</span>
-              <span>ASK QTY</span>
-            </div>
-            {bidAskData.map((level, i) => {
-              const maxQty = Math.max(...bidAskData.map(l => Math.max(l.bidQty, l.askQty)));
-              const bidWidth = (level.bidQty / maxQty) * 100;
-              const askWidth = (level.askQty / maxQty) * 100;
-              
-              return (
-                <div key={i} className="flex items-center gap-1" data-testid={`bid-level-${i}`}>
-                  <div className="w-1/3 flex justify-end">
-                    <div 
-                      className="h-5 bg-emerald-500/40 rounded-l flex items-center justify-end pr-1"
-                      style={{ width: `${bidWidth}%` }}
-                    >
-                      <span className="text-[10px] font-mono text-emerald-400">{(level.bidQty / 1000).toFixed(1)}K</span>
+        {/* Bid Charts for All Indices */}
+        {allIndexBidData.map((indexData, idx) => {
+          const maxQty = Math.max(...indexData.levels.map(l => Math.max(l.bidQty, l.askQty)));
+          const totalBid = indexData.levels.reduce((sum, l) => sum + l.bidQty, 0);
+          const totalAsk = indexData.levels.reduce((sum, l) => sum + l.askQty, 0);
+          
+          return (
+            <Card key={indexData.name} className="hover-elevate" data-testid={`bid-chart-${idx}`}>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  {indexData.name}
+                </CardTitle>
+                <Badge variant="outline" className="text-[10px]">Live</Badge>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                  <span>BID</span>
+                  <span>PRICE</span>
+                  <span>ASK</span>
+                </div>
+                {indexData.levels.map((level, i) => {
+                  const bidWidth = (level.bidQty / maxQty) * 100;
+                  const askWidth = (level.askQty / maxQty) * 100;
+                  
+                  return (
+                    <div key={i} className="flex items-center gap-1">
+                      <div className="w-1/3 flex justify-end">
+                        <div 
+                          className="h-4 bg-emerald-500/40 rounded-l flex items-center justify-end pr-1"
+                          style={{ width: `${bidWidth}%` }}
+                        >
+                          <span className="text-[9px] font-mono text-emerald-400">{(level.bidQty / 1000).toFixed(1)}K</span>
+                        </div>
+                      </div>
+                      <div className="w-1/3 text-center">
+                        <span className="text-[10px] font-mono font-bold">{level.price.toFixed(0)}</span>
+                      </div>
+                      <div className="w-1/3 flex justify-start">
+                        <div 
+                          className="h-4 bg-red-500/40 rounded-r flex items-center pl-1"
+                          style={{ width: `${askWidth}%` }}
+                        >
+                          <span className="text-[9px] font-mono text-red-400">{(level.askQty / 1000).toFixed(1)}K</span>
+                        </div>
+                      </div>
                     </div>
+                  );
+                })}
+                <div className="flex justify-between mt-2 pt-2 border-t border-primary/20">
+                  <div className="text-center">
+                    <p className="text-[9px] text-muted-foreground">Total Bid</p>
+                    <p className="text-xs font-bold text-emerald-400 font-mono">{(totalBid / 1000).toFixed(1)}K</p>
                   </div>
-                  <div className="w-1/3 text-center">
-                    <span className="text-xs font-mono font-bold">{level.price.toFixed(2)}</span>
-                  </div>
-                  <div className="w-1/3 flex justify-start">
-                    <div 
-                      className="h-5 bg-red-500/40 rounded-r flex items-center pl-1"
-                      style={{ width: `${askWidth}%` }}
-                    >
-                      <span className="text-[10px] font-mono text-red-400">{(level.askQty / 1000).toFixed(1)}K</span>
-                    </div>
+                  <div className="text-center">
+                    <p className="text-[9px] text-muted-foreground">Total Ask</p>
+                    <p className="text-xs font-bold text-red-400 font-mono">{(totalAsk / 1000).toFixed(1)}K</p>
                   </div>
                 </div>
-              );
-            })}
-            <div className="flex justify-between mt-3 pt-2 border-t border-primary/20">
-              <div className="text-center">
-                <p className="text-[10px] text-muted-foreground">Total Bid</p>
-                <p className="text-sm font-bold text-emerald-400 font-mono">
-                  {(bidAskData.reduce((sum, l) => sum + l.bidQty, 0) / 1000).toFixed(1)}K
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-[10px] text-muted-foreground">Total Ask</p>
-                <p className="text-sm font-bold text-red-400 font-mono">
-                  {(bidAskData.reduce((sum, l) => sum + l.askQty, 0) / 1000).toFixed(1)}K
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          );
+        })}
         </div>
       </div>
     </Layout>
