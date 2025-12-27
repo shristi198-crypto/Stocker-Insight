@@ -1,69 +1,124 @@
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, TrendingDown, RefreshCw, Clock, BarChart3 } from "lucide-react";
 
-const highVolume = [
-  { symbol: "RELIANCE", price: "2,985.40", volume: "15.2M", change: "+1.2%" },
-  { symbol: "HDFCBANK", price: "1,642.15", volume: "12.8M", change: "-0.5%" },
-  { symbol: "ICICIBANK", price: "1,120.30", volume: "10.5M", change: "+0.8%" },
-  { symbol: "INFY", price: "1,530.45", volume: "8.9M", change: "+2.1%" },
-  { symbol: "TCS", price: "3,845.00", volume: "7.2M", change: "-1.1%" },
-  { symbol: "AXISBANK", price: "1,085.60", volume: "6.8M", change: "+1.5%" },
-  { symbol: "SBIN", price: "742.10", volume: "5.9M", change: "+0.3%" },
-  { symbol: "BHARTIARTL", price: "1,245.30", volume: "5.1M", change: "+1.9%" },
-  { symbol: "WIPRO", price: "485.20", volume: "4.8M", change: "-0.2%" },
-  { symbol: "KOTAKBANK", price: "1,745.00", volume: "4.2M", change: "+0.6%" },
-];
-
-const lowVolume = [
-  { symbol: "ZODIAC", price: "124.50", volume: "1.2K", change: "-2.1%" },
-  { symbol: "MUKANDLTD", price: "165.30", volume: "2.5K", change: "+0.5%" },
-  { symbol: "ORICON", price: "32.40", volume: "3.1K", change: "+1.2%" },
-  { symbol: "ARVIND", price: "285.40", volume: "4.2K", change: "-0.8%" },
-  { symbol: "RAMCOIND", price: "245.10", volume: "5.1K", change: "+0.2%" },
-  { symbol: "SURYALAXMI", price: "85.30", volume: "6.2K", change: "-1.5%" },
-  { symbol: "SURYAROSNI", price: "642.10", volume: "7.1K", change: "+1.1%" },
-  { symbol: "SICAL", price: "45.20", volume: "8.2K", change: "+0.9%" },
-  { symbol: "SINCLAIR", price: "210.40", volume: "9.1K", change: "-0.4%" },
-  { symbol: "STEELXIND", price: "12.30", volume: "9.8K", change: "+0.1%" },
-];
+interface Stock {
+  symbol: string;
+  price: string;
+  change: number;
+  volume: string;
+  signal: string;
+}
 
 export default function StockLists() {
+  const [bullishStocks, setBullishStocks] = useState<Stock[]>([]);
+  const [bearishStocks, setBearishStocks] = useState<Stock[]>([]);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const bullishSymbols = ["TATASTEEL", "ADANIENT", "HINDALCO", "COALINDIA", "ONGC", "NTPC", "POWERGRID", "BPCL", "IOC", "GAIL"];
+  const bearishSymbols = ["TECHM", "WIPRO", "HCLTECH", "INFY", "TCS", "LTIM", "MPHASIS", "COFORGE", "PERSISTENT", "TATAELXSI"];
+  const bullishSignals = ["Breakout Pattern", "Golden Cross", "RSI Oversold Bounce", "MACD Bullish", "Volume Surge", "Support Bounce", "Cup & Handle", "Bull Flag", "Ascending Triangle", "Double Bottom"];
+  const bearishSignals = ["Breakdown Pattern", "Death Cross", "RSI Overbought", "MACD Bearish", "Volume Drop", "Resistance Rejection", "Head & Shoulders", "Bear Flag", "Descending Triangle", "Double Top"];
+
+  const generateData = () => {
+    setBullishStocks(bullishSymbols.map((symbol, i) => ({
+      symbol,
+      price: (Math.random() * 2000 + 200).toFixed(2),
+      change: parseFloat((Math.random() * 8 + 1).toFixed(2)),
+      volume: `${(Math.random() * 20 + 5).toFixed(1)}M`,
+      signal: bullishSignals[i % bullishSignals.length]
+    })));
+
+    setBearishStocks(bearishSymbols.map((symbol, i) => ({
+      symbol,
+      price: (Math.random() * 3000 + 500).toFixed(2),
+      change: parseFloat((-Math.random() * 8 - 0.5).toFixed(2)),
+      volume: `${(Math.random() * 15 + 3).toFixed(1)}M`,
+      signal: bearishSignals[i % bearishSignals.length]
+    })));
+
+    setLastUpdated(new Date());
+  };
+
+  useEffect(() => {
+    generateData();
+    const interval = setInterval(generateData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    generateData();
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
   return (
     <Layout>
-      <div className="space-y-8">
-        <h1 className="text-3xl font-bold">Stock Market Lists</h1>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight flex items-center gap-3" data-testid="text-stocks-title">
+              <BarChart3 className="w-8 h-8 text-primary" />
+              STOCK SIGNALS
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              AI-detected bullish and bearish stock patterns
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              Updated: {lastUpdated.toLocaleTimeString()}
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              data-testid="button-refresh-stocks"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <TrendingUp className="text-emerald-600" />
-                High Volume Stocks
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="border-2 border-emerald-500/30">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+              <CardTitle className="text-lg font-bold flex items-center gap-2 text-emerald-400">
+                <TrendingUp className="w-5 h-5" />
+                BULLISH STOCKS
               </CardTitle>
+              <Badge variant="default" className="text-xs">{bullishStocks.length} Stocks</Badge>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Symbol</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Volume</TableHead>
-                    <TableHead className="text-right">Change</TableHead>
+                    <TableHead className="text-xs">SYMBOL</TableHead>
+                    <TableHead className="text-xs">PRICE</TableHead>
+                    <TableHead className="text-xs">SIGNAL</TableHead>
+                    <TableHead className="text-xs text-right">CHANGE</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {highVolume.map((stock) => (
-                    <TableRow key={stock.symbol}>
-                      <TableCell className="font-medium">{stock.symbol}</TableCell>
-                      <TableCell>₹{stock.price}</TableCell>
-                      <TableCell>{stock.volume}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant={stock.change.startsWith("+") ? "default" : "destructive"}>
-                          {stock.change}
+                  {bullishStocks.map((stock, idx) => (
+                    <TableRow key={stock.symbol} data-testid={`bullish-stock-${idx}`}>
+                      <TableCell className="font-bold">{stock.symbol}</TableCell>
+                      <TableCell className="font-mono">₹{stock.price}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
+                          {stock.signal}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="font-mono font-bold text-emerald-400">+{stock.change}%</span>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -72,33 +127,36 @@ export default function StockLists() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <TrendingDown className="text-red-500" />
-                Low Volume Stocks
+          <Card className="border-2 border-red-500/30">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+              <CardTitle className="text-lg font-bold flex items-center gap-2 text-red-400">
+                <TrendingDown className="w-5 h-5" />
+                BEARISH STOCKS
               </CardTitle>
+              <Badge variant="destructive" className="text-xs">{bearishStocks.length} Stocks</Badge>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Symbol</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Volume</TableHead>
-                    <TableHead className="text-right">Change</TableHead>
+                    <TableHead className="text-xs">SYMBOL</TableHead>
+                    <TableHead className="text-xs">PRICE</TableHead>
+                    <TableHead className="text-xs">SIGNAL</TableHead>
+                    <TableHead className="text-xs text-right">CHANGE</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lowVolume.map((stock) => (
-                    <TableRow key={stock.symbol}>
-                      <TableCell className="font-medium">{stock.symbol}</TableCell>
-                      <TableCell>₹{stock.price}</TableCell>
-                      <TableCell>{stock.volume}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant={stock.change.startsWith("+") ? "default" : "destructive"}>
-                          {stock.change}
+                  {bearishStocks.map((stock, idx) => (
+                    <TableRow key={stock.symbol} data-testid={`bearish-stock-${idx}`}>
+                      <TableCell className="font-bold">{stock.symbol}</TableCell>
+                      <TableCell className="font-mono">₹{stock.price}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px] bg-red-500/10 border-red-500/30 text-red-400">
+                          {stock.signal}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="font-mono font-bold text-red-400">{stock.change}%</span>
                       </TableCell>
                     </TableRow>
                   ))}
