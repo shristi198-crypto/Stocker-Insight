@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, TrendingUp, TrendingDown, Minus, Newspaper, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-function SentimentBadge({ sentiment, score }: { sentiment: string; score: string }) {
+function SentimentBadge({ sentiment, score, newsId }: { sentiment: string; score: string; newsId?: number }) {
   const config = {
     bullish: { 
       icon: TrendingUp, 
@@ -24,7 +24,11 @@ function SentimentBadge({ sentiment, score }: { sentiment: string; score: string
   const { icon: Icon, className } = config[sentiment as keyof typeof config] || config.neutral;
 
   return (
-    <Badge variant="outline" className={`text-xs font-mono ${className}`}>
+    <Badge 
+      variant="outline" 
+      className={`text-xs font-mono ${className}`}
+      data-testid={newsId ? `badge-news-sentiment-${newsId}` : undefined}
+    >
       <Icon className="w-3 h-3 mr-1" />
       {score}
     </Badge>
@@ -37,33 +41,51 @@ function NewsCard({ item }: { item: NewsItem }) {
     : "Just now";
 
   return (
-    <div className="p-4 border-b border-primary/10 last:border-b-0 hover-elevate">
+    <div 
+      className="p-4 border-b border-primary/10 last:border-b-0 hover-elevate"
+      data-testid={`card-news-${item.id}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <Badge variant="outline" className="text-[10px] bg-primary/10 border-primary/20">
+            <Badge 
+              variant="outline" 
+              className="text-[10px] bg-primary/10 border-primary/20"
+              data-testid={`badge-news-category-${item.id}`}
+            >
               {item.category}
             </Badge>
-            <span className="text-[10px] text-muted-foreground">{item.source}</span>
-            <span className="text-[10px] text-muted-foreground">{timeAgo}</span>
+            <span className="text-[10px] text-muted-foreground" data-testid={`text-news-source-${item.id}`}>{item.source}</span>
+            <span className="text-[10px] text-muted-foreground" data-testid={`text-news-time-${item.id}`}>{timeAgo}</span>
           </div>
-          <h4 className="text-sm font-semibold text-foreground leading-tight mb-1">
+          <h4 
+            className="text-sm font-semibold text-foreground leading-tight mb-1"
+            data-testid={`text-news-title-${item.id}`}
+          >
             {item.title}
           </h4>
-          <p className="text-xs text-muted-foreground line-clamp-2">
+          <p 
+            className="text-xs text-muted-foreground line-clamp-2"
+            data-testid={`text-news-summary-${item.id}`}
+          >
             {item.summary}
           </p>
           {item.relatedStocks && item.relatedStocks.length > 0 && (
             <div className="flex items-center gap-1 mt-2 flex-wrap">
-              {item.relatedStocks.map((stock) => (
-                <Badge key={stock} variant="secondary" className="text-[10px] font-mono">
+              {item.relatedStocks.map((stock, index) => (
+                <Badge 
+                  key={stock} 
+                  variant="secondary" 
+                  className="text-[10px] font-mono"
+                  data-testid={`badge-news-stock-${item.id}-${index}`}
+                >
                   {stock}
                 </Badge>
               ))}
             </div>
           )}
         </div>
-        <SentimentBadge sentiment={item.sentiment} score={item.sentimentScore} />
+        <SentimentBadge sentiment={item.sentiment} score={item.sentimentScore} newsId={item.id} />
       </div>
     </div>
   );
@@ -99,23 +121,24 @@ export function NewsFeed({ compact = false }: { compact?: boolean }) {
       </CardHeader>
       <CardContent className="p-0">
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-8" data-testid="status-news-loading">
             <Loader2 className="w-6 h-6 text-primary animate-spin" />
           </div>
         ) : !news || news.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-muted-foreground" data-testid="status-news-empty">
             <p className="text-sm mb-3">No news available</p>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => refreshNews()}
               disabled={isRefreshing}
+              data-testid="button-load-news"
             >
               {isRefreshing ? "Loading..." : "Load News"}
             </Button>
           </div>
         ) : (
-          <div className="divide-y divide-primary/10">
+          <div className="divide-y divide-primary/10" data-testid="list-news-items">
             {displayNews?.map((item) => (
               <NewsCard key={item.id} item={item} />
             ))}
