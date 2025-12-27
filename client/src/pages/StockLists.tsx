@@ -21,6 +21,7 @@ export default function StockLists() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const bullishSymbols = ["TATASTEEL", "ADANIENT", "HINDALCO", "COALINDIA", "ONGC", "NTPC", "POWERGRID", "BPCL", "IOC", "GAIL"];
   const bearishSymbols = ["TECHM", "WIPRO", "HCLTECH", "INFY", "TCS", "LTIM", "MPHASIS", "COFORGE", "PERSISTENT", "TATAELXSI"];
@@ -49,8 +50,12 @@ export default function StockLists() {
 
   useEffect(() => {
     generateData();
-    const interval = setInterval(generateData, 30000);
-    return () => clearInterval(interval);
+    const dataInterval = setInterval(generateData, 30000);
+    const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => {
+      clearInterval(dataInterval);
+      clearInterval(timeInterval);
+    };
   }, []);
 
   const handleRefresh = () => {
@@ -86,9 +91,16 @@ export default function StockLists() {
                 data-testid="input-date"
               />
             </div>
+            <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-md px-3 py-2">
+              <Clock className="w-4 h-4 text-primary" />
+              <span className="text-sm font-mono font-bold" data-testid="text-current-time">
+                {currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+              </span>
+              <Badge variant="outline" className="text-[10px] ml-1">IST</Badge>
+            </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              Updated: {lastUpdated.toLocaleTimeString()}
+              <RefreshCw className="w-3 h-3" />
+              Last: {lastUpdated.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
             </div>
             <Button 
               variant="outline" 
