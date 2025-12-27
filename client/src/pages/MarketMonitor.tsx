@@ -2,8 +2,14 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, Users, Zap, Building2, FileText } from "lucide-react";
+import { TrendingUp, Zap, Building2, FileText, BarChart3 } from "lucide-react";
 import { Layout } from "@/components/Layout";
+
+interface BidAskLevel {
+  price: number;
+  bidQty: number;
+  askQty: number;
+}
 
 export default function MarketMonitor() {
   const [magicStocks, setMagicStocks] = useState([
@@ -29,10 +35,13 @@ export default function MarketMonitor() {
     { company: "HCC", type: "Award of Order", details: "Construction contract Rs. 234 Cr", time: "09:15 AM" },
   ]);
 
-  const [activeTraders, setActiveTraders] = useState([
-    { id: "TRD_882", activity: "High", tradeCount: 142 },
-    { id: "TRD_119", activity: "Medium", tradeCount: 89 },
-    { id: "TRD_454", activity: "High", tradeCount: 215 },
+  const [bidAskData, setBidAskData] = useState<BidAskLevel[]>([
+    { price: 22150, bidQty: 4500, askQty: 3200 },
+    { price: 22145, bidQty: 6800, askQty: 2100 },
+    { price: 22140, bidQty: 8200, askQty: 1500 },
+    { price: 22135, bidQty: 5600, askQty: 4800 },
+    { price: 22130, bidQty: 3200, askQty: 7200 },
+    { price: 22125, bidQty: 2100, askQty: 9500 },
   ]);
 
 
@@ -81,10 +90,11 @@ export default function MarketMonitor() {
         return [newEvent, ...prev.slice(0, 4)];
       });
 
-      // Update trader activity
-      setActiveTraders(prev => prev.map(trader => ({
-        ...trader,
-        tradeCount: trader.tradeCount + Math.floor(Math.random() * 3)
+      // Update bid/ask data
+      setBidAskData(prev => prev.map(level => ({
+        price: level.price + (Math.random() - 0.5) * 2,
+        bidQty: Math.max(1000, level.bidQty + Math.floor((Math.random() - 0.5) * 1000)),
+        askQty: Math.max(1000, level.askQty + Math.floor((Math.random() - 0.5) * 1000)),
       })));
     }, 5000);
 
@@ -192,26 +202,64 @@ export default function MarketMonitor() {
           </CardContent>
         </Card>
 
-        {/* Active Traders */}
+        {/* Bid Chart */}
         <Card className="hover-elevate">
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Users className="w-4 h-4 text-primary" />
-              ACTIVE TRADERS
+              <BarChart3 className="w-4 h-4 text-primary" />
+              NIFTY 50 BID CHART
             </CardTitle>
+            <Badge variant="outline" className="text-[10px]">Live</Badge>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {activeTraders.map((trader) => (
-              <div key={trader.id} className="flex justify-between items-center">
-                <p className="text-xs font-mono">{trader.id}</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{trader.tradeCount} trades</span>
-                  <Badge variant="outline" className="text-[10px]">
-                    {trader.activity}
-                  </Badge>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-[10px] text-muted-foreground mb-2">
+              <span>BID QTY</span>
+              <span>PRICE</span>
+              <span>ASK QTY</span>
+            </div>
+            {bidAskData.map((level, i) => {
+              const maxQty = Math.max(...bidAskData.map(l => Math.max(l.bidQty, l.askQty)));
+              const bidWidth = (level.bidQty / maxQty) * 100;
+              const askWidth = (level.askQty / maxQty) * 100;
+              
+              return (
+                <div key={i} className="flex items-center gap-1" data-testid={`bid-level-${i}`}>
+                  <div className="w-1/3 flex justify-end">
+                    <div 
+                      className="h-5 bg-emerald-500/40 rounded-l flex items-center justify-end pr-1"
+                      style={{ width: `${bidWidth}%` }}
+                    >
+                      <span className="text-[10px] font-mono text-emerald-400">{(level.bidQty / 1000).toFixed(1)}K</span>
+                    </div>
+                  </div>
+                  <div className="w-1/3 text-center">
+                    <span className="text-xs font-mono font-bold">{level.price.toFixed(2)}</span>
+                  </div>
+                  <div className="w-1/3 flex justify-start">
+                    <div 
+                      className="h-5 bg-red-500/40 rounded-r flex items-center pl-1"
+                      style={{ width: `${askWidth}%` }}
+                    >
+                      <span className="text-[10px] font-mono text-red-400">{(level.askQty / 1000).toFixed(1)}K</span>
+                    </div>
+                  </div>
                 </div>
+              );
+            })}
+            <div className="flex justify-between mt-3 pt-2 border-t border-primary/20">
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground">Total Bid</p>
+                <p className="text-sm font-bold text-emerald-400 font-mono">
+                  {(bidAskData.reduce((sum, l) => sum + l.bidQty, 0) / 1000).toFixed(1)}K
+                </p>
               </div>
-            ))}
+              <div className="text-center">
+                <p className="text-[10px] text-muted-foreground">Total Ask</p>
+                <p className="text-sm font-bold text-red-400 font-mono">
+                  {(bidAskData.reduce((sum, l) => sum + l.askQty, 0) / 1000).toFixed(1)}K
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
         </div>
