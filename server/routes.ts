@@ -95,5 +95,69 @@ Note: Data should reflect the most recent 5-minute interval state if possible.
     res.json(analysis);
   });
 
+  app.get(api.news.list.path, async (req, res) => {
+    const newsItems = await storage.getRecentNews(20);
+    res.json(newsItems);
+  });
+
+  app.post(api.news.refresh.path, async (req, res) => {
+    try {
+      const prompt = `
+Generate 8 realistic Indian stock market news headlines with sentiment analysis.
+For each news item, provide:
+- title: A realistic headline (max 100 chars)
+- summary: Brief summary (max 200 chars)
+- source: One of [Economic Times, MoneyControl, LiveMint, Business Standard, CNBC-TV18]
+- sentiment: "bullish", "bearish", or "neutral"
+- sentimentScore: A percentage like "+2.5%" for bullish, "-1.8%" for bearish, "0%" for neutral
+- relatedStocks: Array of 1-3 stock symbols like ["RELIANCE", "TCS"]
+- category: One of [Markets, Stocks, Economy, Sector, Global, Corporate]
+
+Return ONLY a valid JSON array. No markdown, no explanation.
+Example format:
+[{"title":"...", "summary":"...", "source":"...", "sentiment":"bullish", "sentimentScore":"+1.5%", "relatedStocks":["TCS"], "category":"Stocks"}]
+`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 1500,
+        temperature: 0.8,
+      });
+
+      const content = completion.choices[0]?.message?.content || "[]";
+      let newsData: any[] = [];
+      
+      try {
+        const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        newsData = JSON.parse(cleanContent);
+      } catch (e) {
+        console.error("Failed to parse news JSON:", e);
+        return res.status(500).json({ message: "Failed to parse news data" });
+      }
+
+      await storage.clearNews();
+
+      const createdNews = [];
+      for (const item of newsData) {
+        const created = await storage.createNews({
+          title: item.title,
+          summary: item.summary,
+          source: item.source,
+          sentiment: item.sentiment,
+          sentimentScore: item.sentimentScore,
+          relatedStocks: item.relatedStocks || [],
+          category: item.category,
+        });
+        createdNews.push(created);
+      }
+
+      res.json(createdNews);
+    } catch (err) {
+      console.error("News refresh failed:", err);
+      res.status(500).json({ message: "Failed to refresh news" });
+    }
+  });
+
   return httpServer;
 }

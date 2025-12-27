@@ -1,6 +1,7 @@
 import { Layout } from "@/components/Layout";
 import { StockSearch } from "@/components/StockSearch";
 import { RecentAnalyses } from "@/components/RecentAnalyses";
+import { NewsFeed } from "@/components/NewsFeed";
 import { useAnalyses } from "@/hooks/use-analysis";
 import { Loader2 } from "lucide-react";
 
@@ -29,15 +30,20 @@ export default function Home() {
           <StockSearch />
         </div>
 
-        {/* Recent Analyses List */}
-        <div className="w-full animate-in slide-in-from-bottom-8 duration-700 delay-300">
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            </div>
-          ) : (
-            <RecentAnalyses analyses={analyses || []} />
-          )}
+        {/* News and Recent Analyses */}
+        <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 delay-300">
+          <div className="lg:col-span-2">
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              </div>
+            ) : (
+              <RecentAnalyses analyses={analyses || []} />
+            )}
+          </div>
+          <div className="lg:col-span-1">
+            <NewsFeed compact />
+          </div>
         </div>
       </div>
     </Layout>

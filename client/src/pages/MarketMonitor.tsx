@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Newspaper, TrendingUp, BookOpen, Users, Zap } from "lucide-react";
+import { TrendingUp, BookOpen, Users, Zap } from "lucide-react";
 import { Layout } from "@/components/Layout";
+import { NewsFeed } from "@/components/NewsFeed";
 
 export default function MarketMonitor() {
   const [magicStocks, setMagicStocks] = useState([
@@ -34,23 +35,17 @@ export default function MarketMonitor() {
     { id: "TRD_454", activity: "High", tradeCount: 215 },
   ]);
 
-  const [marketNews, setMarketNews] = useState([
-    { title: "Sensex hits all-time high amid global rally", time: "10 mins ago" },
-    { title: "RBI maintains repo rate at 6.5%", time: "1 hour ago" },
-    { title: "IT stocks lead market gains today", time: "2 hours ago" },
-  ]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       // Dynamically update Magic Stocks based on other signals
       setMagicStocks(prev => {
         const topVolume = highVolumeStocks[0]?.symbol || "N/A";
-        const latestNews = marketNews[0]?.title || "N/A";
         const bestBid = orderBook.find(o => o.type === 'Bid')?.price || "N/A";
 
         return [
           { symbol: topVolume, score: "99/100", reason: "Volume Peak + Price Action" },
-          { symbol: prev[1].symbol, score: "96/100", reason: `News: ${latestNews.substring(0, 20)}...` },
+          { symbol: prev[1].symbol, score: "96/100", reason: "News Sentiment Analysis" },
           { symbol: prev[2].symbol, score: "94/100", reason: `Order Flow Support at ₹${bestBid}` },
           { symbol: prev[3].symbol, score: "91/100", reason: "Institutional Buy Signal" },
         ];
@@ -125,23 +120,8 @@ export default function MarketMonitor() {
           </CardContent>
         </Card>
 
-        {/* Market News */}
-        <Card className="hover-elevate">
-          <CardHeader className="flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Newspaper className="w-4 h-4 text-primary" />
-              LATEST NEWS
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {marketNews.map((news, i) => (
-              <div key={i} className="space-y-1">
-                <p className="text-sm font-medium leading-tight">{news.title}</p>
-                <p className="text-xs text-muted-foreground">{news.time}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        {/* Market News - AI Sentiment */}
+        <NewsFeed compact />
 
         {/* High Volume */}
         <Card className="hover-elevate">

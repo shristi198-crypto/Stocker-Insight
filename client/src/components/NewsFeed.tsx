@@ -1,0 +1,127 @@
+import { useNews, useRefreshNews, type NewsItem } from "@/hooks/use-news";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, TrendingUp, TrendingDown, Minus, Newspaper, Loader2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+function SentimentBadge({ sentiment, score }: { sentiment: string; score: string }) {
+  const config = {
+    bullish: { 
+      icon: TrendingUp, 
+      className: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" 
+    },
+    bearish: { 
+      icon: TrendingDown, 
+      className: "bg-red-500/20 text-red-400 border-red-500/30" 
+    },
+    neutral: { 
+      icon: Minus, 
+      className: "bg-primary/20 text-primary border-primary/30" 
+    },
+  };
+
+  const { icon: Icon, className } = config[sentiment as keyof typeof config] || config.neutral;
+
+  return (
+    <Badge variant="outline" className={`text-xs font-mono ${className}`}>
+      <Icon className="w-3 h-3 mr-1" />
+      {score}
+    </Badge>
+  );
+}
+
+function NewsCard({ item }: { item: NewsItem }) {
+  const timeAgo = item.createdAt 
+    ? formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })
+    : "Just now";
+
+  return (
+    <div className="p-4 border-b border-primary/10 last:border-b-0 hover-elevate">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <Badge variant="outline" className="text-[10px] bg-primary/10 border-primary/20">
+              {item.category}
+            </Badge>
+            <span className="text-[10px] text-muted-foreground">{item.source}</span>
+            <span className="text-[10px] text-muted-foreground">{timeAgo}</span>
+          </div>
+          <h4 className="text-sm font-semibold text-foreground leading-tight mb-1">
+            {item.title}
+          </h4>
+          <p className="text-xs text-muted-foreground line-clamp-2">
+            {item.summary}
+          </p>
+          {item.relatedStocks && item.relatedStocks.length > 0 && (
+            <div className="flex items-center gap-1 mt-2 flex-wrap">
+              {item.relatedStocks.map((stock) => (
+                <Badge key={stock} variant="secondary" className="text-[10px] font-mono">
+                  {stock}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+        <SentimentBadge sentiment={item.sentiment} score={item.sentimentScore} />
+      </div>
+    </div>
+  );
+}
+
+export function NewsFeed({ compact = false }: { compact?: boolean }) {
+  const { data: news, isLoading } = useNews();
+  const { mutate: refreshNews, isPending: isRefreshing } = useRefreshNews();
+
+  const displayNews = compact ? news?.slice(0, 5) : news;
+
+  return (
+    <Card className="border-2 border-primary/30">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+        <CardTitle className="text-sm font-bold flex items-center gap-2">
+          <Newspaper className="w-4 h-4 text-primary" />
+          LIVE NEWS FEED
+        </CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => refreshNews()}
+          disabled={isRefreshing}
+          className="text-primary"
+          data-testid="button-refresh-news"
+        >
+          {isRefreshing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
+        </Button>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+          </div>
+        ) : !news || news.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm mb-3">No news available</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => refreshNews()}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? "Loading..." : "Load News"}
+            </Button>
+          </div>
+        ) : (
+          <div className="divide-y divide-primary/10">
+            {displayNews?.map((item) => (
+              <NewsCard key={item.id} item={item} />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
