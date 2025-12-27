@@ -64,7 +64,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
       </div>
 
       {chartData && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-card border border-border rounded-2xl p-4 shadow-sm overflow-hidden min-h-[350px]">
             <Plot
               data={[
@@ -85,7 +85,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
                 }
               ]}
               layout={{
-                title: 'Financial Performance',
+                title: { text: 'Financial Performance' },
                 autosize: true,
                 margin: { l: 40, r: 20, t: 40, b: 60 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
@@ -112,7 +112,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
                 }
               ]}
               layout={{
-                title: 'Recent Price Action',
+                title: { text: 'Recent Price Action' },
                 autosize: true,
                 margin: { l: 40, r: 20, t: 40, b: 40 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
@@ -122,6 +122,32 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
               useResizeHandler={true}
               style={{ width: "100%", height: "100%" }}
             />
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm overflow-hidden min-h-[350px] flex flex-col justify-center">
+            <h3 className="text-lg font-bold mb-4 text-center">Fundamental Metrics</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-secondary/20 rounded-xl border border-border/50 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase">PE Ratio</p>
+                <p className="text-lg font-bold text-primary">{chartData.technical_indicators?.PE_Ratio || 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-secondary/20 rounded-xl border border-border/50 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase">ROE</p>
+                <p className="text-lg font-bold text-primary">{chartData.technical_indicators?.ROE ? `${chartData.technical_indicators.ROE}%` : 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-secondary/20 rounded-xl border border-border/50 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase">D/E Ratio</p>
+                <p className="text-lg font-bold text-primary">{chartData.technical_indicators?.Debt_to_Equity || 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-secondary/20 rounded-xl border border-border/50 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase">Promoter</p>
+                <p className="text-lg font-bold text-primary">{chartData.technical_indicators?.Promoter_holding ? `${chartData.technical_indicators.Promoter_holding}%` : 'N/A'}</p>
+              </div>
+              <div className="p-3 bg-secondary/20 rounded-xl border border-border/50 text-center col-span-2">
+                <p className="text-[10px] text-muted-foreground uppercase">FII / DII Holding</p>
+                <p className="text-sm font-bold text-primary">{chartData.technical_indicators?.FII_holding || '0'}% / {chartData.technical_indicators?.DII_holding || '0'}%</p>
+              </div>
+            </div>
           </div>
         </div>
       )}

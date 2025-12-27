@@ -22,16 +22,17 @@ export async function registerRoutes(
 
       // Generate analysis using OpenAI
       const prompt = `
-Act as a professional Financial Analyst specialized in the Indian Stock Market.
+Act as a professional Stock Market Analyst specialized in the Indian Stock Market.
+
 Analyze the stock: ${symbol}
 Market: Indian Stock Market (NSE/BSE)
 
-You MUST provide precise financial numbers as found on professional platforms like Screener.in and MoneyControl.
+Provide a detailed analysis covering the following points:
+Using methodologies similar to Seaborn, Numpy, and Pandas for data mining and visualization.
+Reference data from Screener.in and NSE.com.
 
-Provide a detailed analysis covering:
-
-1. Company Overview (business model, sector, competitors) - EXACTLY 1 LINE.
-2. Market Snapshot: (Current Market Price & Market Capitalization in Cr, 52-week High/Low)
+1. Company Overview (business model, sector, competitors) - EXACTLY 2 LINES.
+2. Market Snapshot: (Current Market Price & Market Capitalization in Cr, 52-week High/Low).
 3. Quantitative Data (JSON block for Plotly charts):
    {
      "revenue_years": ["2020", "2021", "2022", "2023", "2024"],
@@ -42,13 +43,21 @@ Provide a detailed analysis covering:
        "RSI": number,
        "PE_Ratio": number,
        "ROE": number,
-       "Debt_to_Equity": number
+       "Debt_to_Equity": number,
+       "Promoter_holding": percentage,
+       "FII_holding": percentage,
+       "DII_holding": percentage
      }
    }
-4. Technical Analysis: (Trend, Support/Resistance, RSI/MACD/MA details, Volume analysis)
-5. Final verdict: Buy / Hold / Avoid (with clear reasoning)
+4. Technical Analysis: (Trend short-term & long-term, Support & Resistance levels, RSI, MACD, Moving Averages, Volume analysis).
+5. Highlight Points: [Recent News or Events impacting the stock].
+6. Risk factors involved.
+7. Short-term view (1-3 months).
+8. Long-term view (1-3 years).
+9. Final verdict: Buy / Hold / Avoid (with reasoning).
 
 Format the report in Markdown, but ensure the JSON block is CLEARLY marked with \`\`\`json.
+Note: Data should reflect the most recent 5-minute interval state if possible.
 `;
 
       const completion = await openai.chat.completions.create({
