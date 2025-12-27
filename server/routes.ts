@@ -138,6 +138,104 @@ Note: Data should reflect the most recent 5-minute interval state if possible.
     }
   });
 
+  // Historical stock data endpoint with timeframes
+  app.get("/api/historical/:symbol", async (req, res) => {
+    try {
+      const symbol = req.params.symbol.toUpperCase();
+      const timeframe = (req.query.timeframe as string) || "1M";
+      
+      // Generate realistic OHLC data based on timeframe
+      const now = new Date();
+      const dataPoints: any[] = [];
+      const events: any[] = [];
+      
+      let days = 30;
+      switch (timeframe) {
+        case "1D": days = 1; break;
+        case "1W": days = 7; break;
+        case "1M": days = 30; break;
+        case "3M": days = 90; break;
+        case "6M": days = 180; break;
+        case "1Y": days = 365; break;
+        case "ALL": days = 730; break;
+      }
+      
+      // Base price varies by symbol
+      const basePrices: { [key: string]: number } = {
+        "RELIANCE": 2450, "TCS": 3800, "HDFCBANK": 1680, "INFY": 1520,
+        "ICICIBANK": 1050, "BHARTIARTL": 1180, "ITC": 465, "SBIN": 780,
+        "HINDUNILVR": 2380, "LT": 3420, "TATASTEEL": 145, "ADANIENT": 2850,
+        "WIPRO": 485, "AXISBANK": 1120, "MARUTI": 11200, "BAJFINANCE": 6850
+      };
+      
+      let basePrice = basePrices[symbol] || 1000 + Math.random() * 2000;
+      let currentPrice = basePrice;
+      
+      // Generate OHLC data
+      const interval = timeframe === "1D" ? 5 : 1440; // 5-min for intraday, daily otherwise
+      const totalPoints = timeframe === "1D" ? 78 : days; // 78 5-min candles for trading day
+      
+      for (let i = totalPoints; i >= 0; i--) {
+        const date = new Date(now);
+        if (timeframe === "1D") {
+          date.setMinutes(date.getMinutes() - (i * 5));
+        } else {
+          date.setDate(date.getDate() - i);
+        }
+        
+        const volatility = 0.02;
+        const trend = Math.sin(i / 10) * 0.005;
+        const change = (Math.random() - 0.5) * volatility + trend;
+        
+        const open = currentPrice;
+        const close = open * (1 + change);
+        const high = Math.max(open, close) * (1 + Math.random() * 0.01);
+        const low = Math.min(open, close) * (1 - Math.random() * 0.01);
+        const volume = Math.floor(100000 + Math.random() * 5000000);
+        
+        dataPoints.push({
+          date: date.toISOString(),
+          open: parseFloat(open.toFixed(2)),
+          high: parseFloat(high.toFixed(2)),
+          low: parseFloat(low.toFixed(2)),
+          close: parseFloat(close.toFixed(2)),
+          volume
+        });
+        
+        currentPrice = close;
+      }
+      
+      // Generate events for the chart
+      const eventTypes = ["Corporate", "News", "Volume Spike", "Dividend"];
+      const eventCount = Math.min(5, Math.floor(days / 20) + 1);
+      
+      for (let i = 0; i < eventCount; i++) {
+        const idx = Math.floor(Math.random() * dataPoints.length);
+        const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+        events.push({
+          date: dataPoints[idx].date,
+          type: eventType,
+          title: eventType === "Corporate" ? "Board Meeting" :
+                 eventType === "News" ? "Analyst Upgrade" :
+                 eventType === "Volume Spike" ? "High Trading Activity" :
+                 "Dividend Declared",
+          price: dataPoints[idx].close
+        });
+      }
+      
+      res.json({
+        symbol,
+        timeframe,
+        data: dataPoints,
+        events,
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error("Historical data fetch failed:", err);
+      res.status(500).json({ message: "Failed to fetch historical data" });
+    }
+  });
+
   app.post(api.news.refresh.path, async (req, res) => {
     try {
       const prompt = `
