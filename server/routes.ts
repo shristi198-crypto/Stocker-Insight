@@ -26,12 +26,25 @@ Act as a professional Financial Analyst specialized in the Indian Stock Market.
 Analyze the stock: ${symbol}
 Market: Indian Stock Market (NSE/BSE)
 
-You MUST provide precise financial numbers as found on professional platforms like Screener.in.
+You MUST provide precise financial numbers as found on professional platforms like Screener.in and MoneyControl.
 
 Provide a detailed analysis covering:
 
 1. Company Overview (business model, sector, competitors) - EXACTLY 1 LINE.
 2. Market Snapshot: (Current Market Price & Market Capitalization in Cr, 52-week High/Low)
+3. Quantitative Data (JSON block for Plotly charts):
+   {
+     "revenue_years": ["2020", "2021", "2022", "2023", "2024"],
+     "revenue_values": [numbers],
+     "profit_values": [numbers],
+     "price_history": [10 recent closing prices],
+     "technical_indicators": {
+       "RSI": number,
+       "PE_Ratio": number,
+       "ROE": number,
+       "Debt_to_Equity": number
+     }
+   }
 4. Technical Analysis: (Trend, Support/Resistance, RSI/MACD/MA details, Volume analysis)
 5. Final verdict: Buy / Hold / Avoid (with clear reasoning)
 

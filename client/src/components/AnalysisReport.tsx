@@ -1,23 +1,10 @@
 import ReactMarkdown from "react-markdown";
 import { Analysis } from "@shared/schema";
 import { format } from "date-fns";
-import { Download, Share2, AlertCircle, BarChart, PieChart, TrendingUp, Activity } from "lucide-react";
+import { Share2, Activity, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  BarChart as ReBarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  Cell,
-  PieChart as RePieChart,
-  Pie
-} from 'recharts';
+import Plot from 'react-plotly.js';
 
 export function AnalysisReport({ analysis }: { analysis: Analysis }) {
   const { toast } = useToast();
@@ -30,9 +17,21 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
     });
   };
 
+  // Extract JSON data for Plotly
+  const jsonMatch = analysis.report.match(/```json\n([\s\S]*?)\n```/);
+  let chartData: any = null;
+  if (jsonMatch) {
+    try {
+      chartData = JSON.parse(jsonMatch[1]);
+    } catch (e) {
+      console.error("Failed to parse chart data", e);
+    }
+  }
+
+  const cleanReport = analysis.report.replace(/```json\n[\s\S]*?\n```/, '');
+
   return (
     <div className="w-full max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6">
-      {/* Report Header */}
       <div className="bg-card border border-border rounded-2xl p-8 md:p-10 relative overflow-hidden shadow-sm">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
         
@@ -40,7 +39,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider border border-primary/20">
-                Visual Market Analysis
+                AI Financial Intelligence
               </span>
               <span className="text-muted-foreground text-sm font-mono">
                 {format(new Date(analysis.createdAt || Date.now()), "MMM d, yyyy")}
@@ -51,7 +50,7 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
             </h1>
             <p className="text-muted-foreground flex items-center gap-2">
               <Activity className="w-4 h-4 text-primary" />
-              Dynamic Market Intelligence Report
+              Screener & MoneyControl Insights
             </p>
           </div>
 
@@ -60,26 +59,82 @@ export function AnalysisReport({ analysis }: { analysis: Analysis }) {
               <Share2 className="w-4 h-4 mr-2" />
               Share
             </Button>
-            <Button variant="outline" size="sm" disabled>
-              <Download className="w-4 h-4 mr-2" />
-              PDF
-            </Button>
           </div>
         </div>
       </div>
 
-      {/* Markdown Content */}
+      {chartData && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-sm overflow-hidden min-h-[350px]">
+            <Plot
+              data={[
+                {
+                  x: chartData.revenue_years || [],
+                  y: chartData.revenue_values || [],
+                  type: 'bar',
+                  name: 'Revenue',
+                  marker: { color: '#9333ea' }
+                },
+                {
+                  x: chartData.revenue_years || [],
+                  y: chartData.profit_values || [],
+                  type: 'scatter',
+                  mode: 'lines+markers',
+                  name: 'Profit',
+                  line: { color: '#16a34a' }
+                }
+              ]}
+              layout={{
+                title: 'Financial Performance',
+                autosize: true,
+                margin: { l: 40, r: 20, t: 40, b: 60 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { family: 'Inter, sans-serif' },
+                showlegend: true,
+                legend: { orientation: 'h', y: -0.2 }
+              }}
+              useResizeHandler={true}
+              style={{ width: "100%", height: "100%" }}
+            />
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-sm overflow-hidden min-h-[350px]">
+            <Plot
+              data={[
+                {
+                  y: chartData.price_history || [],
+                  type: 'scatter',
+                  mode: 'lines',
+                  fill: 'tozeroy',
+                  name: 'Price',
+                  line: { color: '#3b82f6' }
+                }
+              ]}
+              layout={{
+                title: 'Recent Price Action',
+                autosize: true,
+                margin: { l: 40, r: 20, t: 40, b: 40 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { family: 'Inter, sans-serif' }
+              }}
+              useResizeHandler={true}
+              style={{ width: "100%", height: "100%" }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="bg-white border border-border rounded-2xl p-8 md:p-12 shadow-sm relative">
         <div className="prose prose-lg max-w-none prose-headings:text-primary prose-strong:text-emerald-600">
-          <ReactMarkdown>{analysis.report}</ReactMarkdown>
+          <ReactMarkdown>{cleanReport}</ReactMarkdown>
         </div>
         
         <div className="mt-12 pt-8 border-t border-border/50 flex items-start gap-4 text-sm text-muted-foreground bg-secondary/30 p-6 rounded-xl">
           <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            <strong>Disclaimer:</strong> This graphical report is generated by AI for informational purposes only. 
-            It is not financial advice. Technical indicators and fundamental patterns are based on available historical data. 
-            Always conduct your own research or consult a certified financial advisor before trading.
+            <strong>Disclaimer:</strong> This report is AI-generated for informational purposes using data inspired by Screener and MoneyControl. Always consult a professional advisor.
           </p>
         </div>
       </div>
