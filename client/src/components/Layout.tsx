@@ -30,6 +30,36 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
     { name: "NatGas", price: "245", change: -0.89 },
   ]);
 
+  // Welcome voice effect - plays once per session
+  useEffect(() => {
+    const hasPlayed = sessionStorage.getItem('welcome_played');
+    if (!hasPlayed && 'speechSynthesis' in window) {
+      const playWelcome = () => {
+        const utterance = new SpeechSynthesisUtterance("WELCOME TO HUB OF TRADER DOT COM");
+        utterance.rate = 0.9;
+        utterance.pitch = 0.8;
+        utterance.volume = 1;
+        
+        // Try to get a deep male voice
+        const voices = window.speechSynthesis.getVoices();
+        const maleVoice = voices.find(v => v.name.includes('Male') || v.name.includes('David') || v.name.includes('James'));
+        if (maleVoice) utterance.voice = maleVoice;
+        
+        window.speechSynthesis.speak(utterance);
+        sessionStorage.setItem('welcome_played', 'true');
+      };
+      
+      // Voices may not be loaded immediately
+      if (window.speechSynthesis.getVoices().length > 0) {
+        setTimeout(playWelcome, 500);
+      } else {
+        window.speechSynthesis.onvoiceschanged = () => {
+          setTimeout(playWelcome, 500);
+        };
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCommodities(prev => prev.map(c => ({
