@@ -22,40 +22,86 @@ export async function registerRoutes(
   app.post(api.analyze.create.path, async (req, res) => {
     try {
       const { symbol } = api.analyze.create.input.parse(req.body);
+      const upperSymbol = symbol.toUpperCase();
 
-      // Generate analysis using OpenAI - optimized for speed
-      const prompt = `Analyze Indian stock ${symbol} (NSE/BSE). Be concise.
+      // Fetch REAL data from NSE India
+      let nseData: any = null;
+      let tradeInfo: any = null;
+      
+      try {
+        nseData = await nseIndia.getEquityDetails(upperSymbol);
+        tradeInfo = await nseIndia.getEquityTradeInfo(upperSymbol);
+      } catch (nseErr) {
+        console.log("NSE fetch failed, using AI estimation:", nseErr);
+      }
 
-## ${symbol} - Quick Analysis
+      // Extract real data if available
+      const priceInfo = nseData?.priceInfo || {};
+      const info = nseData?.info || {};
+      const metadata = nseData?.metadata || {};
+      const securityInfo = tradeInfo?.securityWiseDP || {};
 
-**Company:** [1 line description]
-**Sector:** [sector]
-**CMP:** Rs [price] | **52W:** [low]-[high]
+      const realData = {
+        companyName: info.companyName || metadata.companyName || upperSymbol,
+        industry: metadata.industry || "N/A",
+        lastPrice: priceInfo.lastPrice || priceInfo.close || 0,
+        change: priceInfo.change || 0,
+        pChange: priceInfo.pChange || 0,
+        open: priceInfo.open || 0,
+        dayHigh: priceInfo.intraDayHighLow?.max || priceInfo.high || 0,
+        dayLow: priceInfo.intraDayHighLow?.min || priceInfo.low || 0,
+        weekHigh: priceInfo.weekHighLow?.max || 0,
+        weekLow: priceInfo.weekHighLow?.min || 0,
+        previousClose: priceInfo.previousClose || 0,
+        totalTradedVolume: securityInfo.quantityTraded || 0,
+        deliveryPercent: securityInfo.deliveryToTradedQuantity || 0,
+      };
+
+      // Build prompt with REAL NSE data
+      const prompt = `Analyze Indian stock ${upperSymbol} using this REAL NSE DATA:
+
+## LIVE NSE DATA:
+- Company: ${realData.companyName}
+- Industry: ${realData.industry}
+- Current Price: Rs ${realData.lastPrice}
+- Day Change: ${realData.change >= 0 ? '+' : ''}${realData.change} (${realData.pChange >= 0 ? '+' : ''}${realData.pChange}%)
+- Day Range: Rs ${realData.dayLow} - Rs ${realData.dayHigh}
+- 52 Week Range: Rs ${realData.weekLow} - Rs ${realData.weekHigh}
+- Previous Close: Rs ${realData.previousClose}
+- Volume: ${realData.totalTradedVolume.toLocaleString()}
+- Delivery %: ${realData.deliveryPercent}%
+
+Generate a concise analysis using this REAL data:
+
+## ${upperSymbol} - Live Analysis
+
+**Company:** ${realData.companyName} | ${realData.industry}
+**CMP:** Rs ${realData.lastPrice} (${realData.pChange >= 0 ? '+' : ''}${realData.pChange}%) | **52W:** Rs ${realData.weekLow} - Rs ${realData.weekHigh}
 
 \`\`\`json
-{"revenue_years":["2022","2023","2024"],"revenue_values":[0,0,0],"profit_values":[0,0,0],"price_history":[10 numbers],"technical_indicators":{"RSI":0,"PE_Ratio":0,"ROE":0,"Debt_to_Equity":0,"Promoter_holding":0,"FII_holding":0,"DII_holding":0}}
+{"revenue_years":["2022","2023","2024"],"revenue_values":[estimate 3 values],"profit_values":[estimate 3 values],"price_history":[generate 10 realistic prices around ${realData.lastPrice}],"technical_indicators":{"RSI":estimate 30-70,"PE_Ratio":estimate,"ROE":estimate,"Debt_to_Equity":estimate,"Promoter_holding":estimate 40-75,"FII_holding":estimate 10-40,"DII_holding":estimate 10-30}}
 \`\`\`
 
-**Technical:** [2 lines - trend, support/resistance, RSI status]
-**News:** [1 key recent event]
+**Technical:** [Based on Rs ${realData.lastPrice}, day range Rs ${realData.dayLow}-${realData.dayHigh}, 52W Rs ${realData.weekLow}-${realData.weekHigh}]
+**News:** [1 recent event for ${realData.companyName}]
 **Risk:** [1 main risk]
-**Short-term (1-3M):** [1 line view]
-**Long-term (1-3Y):** [1 line view]
-**Verdict:** **BUY/HOLD/AVOID** - [1 line reason]
+**Short-term (1-3M):** [view based on current ${realData.pChange}% move]
+**Long-term (1-3Y):** [view]
+**Verdict:** **BUY/HOLD/AVOID** - [reason based on real data]
 
-Use realistic estimated data. Format in Markdown.`;
+Use the REAL prices provided. Format in Markdown.`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 800,
-        temperature: 0.5,
+        max_tokens: 900,
+        temperature: 0.4,
       });
 
       const report = completion.choices[0]?.message?.content || "Failed to generate report.";
 
       const analysis = await storage.createAnalysis({
-        symbol: symbol.toUpperCase(),
+        symbol: upperSymbol,
         report: report,
       });
 
