@@ -42,9 +42,9 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
   // Play welcome voice - Stranger Things style
   const playWelcomeVoice = () => {
     if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance("WELCOME... TO THE HUB... OF TRADER... DOT COM");
-      utterance.rate = 0.6;
-      utterance.pitch = 0.4;
+      const utterance = new SpeechSynthesisUtterance("WELCOME TO HUB OF TRADER DOT COM");
+      utterance.rate = 0.8;
+      utterance.pitch = 0.5;
       utterance.volume = 1;
       
       const voices = window.speechSynthesis.getVoices();
