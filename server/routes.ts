@@ -23,51 +23,33 @@ export async function registerRoutes(
     try {
       const { symbol } = api.analyze.create.input.parse(req.body);
 
-      // Generate analysis using OpenAI
-      const prompt = `
-Act as a professional Stock Market Analyst specialized in the Indian Stock Market.
+      // Generate analysis using OpenAI - optimized for speed
+      const prompt = `Analyze Indian stock ${symbol} (NSE/BSE). Be concise.
 
-Analyze the stock: ${symbol}
-Market: Indian Stock Market (NSE/BSE)
+## ${symbol} - Quick Analysis
 
-Provide a detailed analysis covering the following points:
-Using methodologies similar to Seaborn, Numpy, and Pandas for data mining and visualization.
-Reference data from Screener.in and NSE.com.
+**Company:** [1 line description]
+**Sector:** [sector]
+**CMP:** Rs [price] | **52W:** [low]-[high]
 
-1. Company Overview (business model, sector, competitors) - EXACTLY 2 LINES.
-2. Market Snapshot: (Current Market Price & Market Capitalization in Cr, 52-week High/Low).
-3. Quantitative Data (JSON block for Plotly charts):
-   {
-     "revenue_years": ["2020", "2021", "2022", "2023", "2024"],
-     "revenue_values": [numbers],
-     "profit_values": [numbers],
-     "price_history": [10 recent closing prices],
-     "technical_indicators": {
-       "RSI": number,
-       "PE_Ratio": number,
-       "ROE": number,
-       "Debt_to_Equity": number,
-       "Promoter_holding": percentage,
-       "FII_holding": percentage,
-       "DII_holding": percentage
-     }
-   }
-4. Technical Analysis: (Trend short-term & long-term, Support & Resistance levels, RSI, MACD, Moving Averages, Volume analysis).
-5. Highlight Points: [Recent News or Events impacting the stock].
-6. Risk factors involved.
-7. Short-term view (1-3 months).
-8. Long-term view (1-3 years).
-9. Final verdict: Buy / Hold / Avoid (with reasoning).
+\`\`\`json
+{"revenue_years":["2022","2023","2024"],"revenue_values":[0,0,0],"profit_values":[0,0,0],"price_history":[10 numbers],"technical_indicators":{"RSI":0,"PE_Ratio":0,"ROE":0,"Debt_to_Equity":0,"Promoter_holding":0,"FII_holding":0,"DII_holding":0}}
+\`\`\`
 
-Format the report in Markdown, but ensure the JSON block is CLEARLY marked with \`\`\`json.
-Note: Data should reflect the most recent 5-minute interval state if possible.
-`;
+**Technical:** [2 lines - trend, support/resistance, RSI status]
+**News:** [1 key recent event]
+**Risk:** [1 main risk]
+**Short-term (1-3M):** [1 line view]
+**Long-term (1-3Y):** [1 line view]
+**Verdict:** **BUY/HOLD/AVOID** - [1 line reason]
+
+Use realistic estimated data. Format in Markdown.`;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 1500,
-        temperature: 0.7,
+        max_tokens: 800,
+        temperature: 0.5,
       });
 
       const report = completion.choices[0]?.message?.content || "Failed to generate report.";
