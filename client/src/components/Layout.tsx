@@ -149,18 +149,6 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
         </div>
       </header>
 
-      {/* Running Tagline */}
-      <div className="overflow-hidden bg-primary/10 py-2 border-b border-primary/30">
-        <div className="animate-marquee whitespace-nowrap flex gap-16">
-          <span className="text-primary font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
-          <span className="text-amber-400 font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
-          <span className="text-yellow-300 font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
-          <span className="text-primary font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
-          <span className="text-amber-400 font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
-          <span className="text-yellow-300 font-bold text-sm tracking-wide">FINALLY COMPLETED - MY WORDSS</span>
-        </div>
-      </div>
-
       <main className="flex-1 container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {children}
       </main>
