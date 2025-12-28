@@ -89,7 +89,7 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
                 </Button>
               )}
               <Link href="/" className="flex items-center gap-2 group">
-                <span className="font-black text-xl text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-yellow-300 uppercase tracking-tight">STOCKERSS</span>
+                <span className="font-black text-2xl text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-red-500 to-red-400 uppercase tracking-widest" style={{fontFamily: 'Bebas Neue', textShadow: '0 0 10px rgba(226, 27, 27, 0.7), 0 0 20px rgba(226, 27, 27, 0.5), 0 0 30px rgba(226, 27, 27, 0.3)'}}>STOCKERSS</span>
               </Link>
             </div>
 
