@@ -30,20 +30,25 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
     { name: "NatGas", price: "245", change: -0.89 },
   ]);
 
-  // Welcome voice effect - plays once per session
+  // Welcome voice effect - Stranger Things style creepy voice
   useEffect(() => {
     const hasPlayed = sessionStorage.getItem('welcome_played');
     if (!hasPlayed && 'speechSynthesis' in window) {
       const playWelcome = () => {
-        const utterance = new SpeechSynthesisUtterance("WELCOME TO HUB OF TRADER DOT COM");
-        utterance.rate = 0.9;
-        utterance.pitch = 0.8;
+        const utterance = new SpeechSynthesisUtterance("WELCOME... TO THE HUB... OF TRADER... DOT COM");
+        utterance.rate = 0.6;  // Slow and dramatic
+        utterance.pitch = 0.4; // Deep and eerie
         utterance.volume = 1;
         
-        // Try to get a deep male voice
+        // Try to get the deepest voice available
         const voices = window.speechSynthesis.getVoices();
-        const maleVoice = voices.find(v => v.name.includes('Male') || v.name.includes('David') || v.name.includes('James'));
-        if (maleVoice) utterance.voice = maleVoice;
+        const deepVoice = voices.find(v => 
+          v.name.toLowerCase().includes('male') || 
+          v.name.includes('Daniel') || 
+          v.name.includes('Google UK English Male') ||
+          v.lang === 'en-GB'
+        ) || voices[0];
+        if (deepVoice) utterance.voice = deepVoice;
         
         window.speechSynthesis.speak(utterance);
         sessionStorage.setItem('welcome_played', 'true');
@@ -51,10 +56,10 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
       
       // Voices may not be loaded immediately
       if (window.speechSynthesis.getVoices().length > 0) {
-        setTimeout(playWelcome, 500);
+        setTimeout(playWelcome, 800);
       } else {
         window.speechSynthesis.onvoiceschanged = () => {
-          setTimeout(playWelcome, 500);
+          setTimeout(playWelcome, 800);
         };
       }
     }
