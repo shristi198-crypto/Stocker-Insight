@@ -41,25 +41,40 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
 
   // Play welcome voice - Stranger Things style
   const playWelcomeVoice = () => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance("WELCOME TO HUB OF TRADER DOT COM");
-      utterance.rate = 0.8;
-      utterance.pitch = 0.5;
-      utterance.volume = 1;
-      
-      const voices = window.speechSynthesis.getVoices();
-      const deepVoice = voices.find(v => 
-        v.name.toLowerCase().includes('male') || 
-        v.name.includes('Daniel') || 
-        v.name.includes('Google UK English Male') ||
-        v.lang === 'en-GB'
-      ) || voices[0];
-      if (deepVoice) utterance.voice = deepVoice;
-      
-      window.speechSynthesis.speak(utterance);
-    }
     sessionStorage.setItem('welcome_entered', 'true');
     setShowWelcome(false);
+    
+    if ('speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      const speak = () => {
+        const utterance = new SpeechSynthesisUtterance("WELCOME TO HUB OF TRADER DOT COM");
+        utterance.rate = 0.85;
+        utterance.pitch = 0.6;
+        utterance.volume = 1;
+        
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          const deepVoice = voices.find(v => 
+            v.name.includes('Google') || 
+            v.name.toLowerCase().includes('male') || 
+            v.lang.startsWith('en')
+          ) || voices[0];
+          if (deepVoice) utterance.voice = deepVoice;
+        }
+        
+        window.speechSynthesis.speak(utterance);
+      };
+      
+      // Ensure voices are loaded
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        speak();
+      } else {
+        window.speechSynthesis.onvoiceschanged = speak;
+      }
+    }
   };
 
   useEffect(() => {
