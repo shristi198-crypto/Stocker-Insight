@@ -166,6 +166,39 @@ Use the REAL prices provided. Format in Markdown.`;
     }
   });
 
+  // Live Indian Indices endpoint
+  app.get("/api/nse/indices", async (req, res) => {
+    try {
+      const indices = ["NIFTY 50", "NIFTY BANK", "NIFTY IT", "NIFTY NEXT 50"];
+      const indexData: any[] = [];
+
+      for (const indexName of indices) {
+        try {
+          const data = await nseIndia.getEquityStockIndices(indexName);
+          if (data && data.metadata) {
+            indexData.push({
+              name: indexName,
+              lastPrice: data.metadata.last || data.metadata.lastPrice || 0,
+              change: data.metadata.change || 0,
+              pChange: data.metadata.percChange || data.metadata.pChange || 0,
+              open: data.metadata.open || 0,
+              high: data.metadata.high || 0,
+              low: data.metadata.low || 0,
+              previousClose: data.metadata.previousClose || 0,
+            });
+          }
+        } catch (indexErr) {
+          console.log(`Failed to fetch ${indexName}:`, indexErr);
+        }
+      }
+
+      res.json({ indices: indexData, lastUpdated: new Date().toISOString() });
+    } catch (err) {
+      console.error("NSE indices fetch failed:", err);
+      res.status(500).json({ message: "Failed to fetch indices data" });
+    }
+  });
+
   // Historical stock data endpoint with timeframes
   app.get("/api/historical/:symbol", async (req, res) => {
     try {

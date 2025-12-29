@@ -1,10 +1,23 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TrendingUp, Zap, Building2, FileText, BarChart3, Newspaper, Activity, Building, TrendingDown, RefreshCw, Clock } from "lucide-react";
 import { Layout } from "@/components/Layout";
+import { queryClient } from "@/lib/queryClient";
+
+interface IndexData {
+  name: string;
+  lastPrice: number;
+  change: number;
+  pChange: number;
+  open: number;
+  high: number;
+  low: number;
+  previousClose: number;
+}
 
 interface BidAskLevel {
   price: number;
@@ -39,6 +52,13 @@ export default function MarketMonitor() {
   const [nextRefresh, setNextRefresh] = useState(30);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Fetch live Indian indices
+  const { data: indicesData, refetch: refetchIndices, isFetching: isFetchingIndices } = useQuery<{ indices: IndexData[], lastUpdated: string }>({
+    queryKey: ['/api/nse/indices'],
+    refetchInterval: 1800000,
+    staleTime: 1800000,
+  });
 
   const [highVolumeStocks, setHighVolumeStocks] = useState([
     { symbol: "RELIANCE", volume: "12.4M", change: "+1.2%" },
@@ -141,7 +161,9 @@ export default function MarketMonitor() {
   const handleRefresh = () => {
     setIsRefreshing(true);
     
-    // Refresh all data
+    // Refresh all data including live indices
+    queryClient.invalidateQueries({ queryKey: ['/api/nse/indices'] });
+    refetchIndices();
     setMagicStocks(computeMagicList());
     
     // Simulate refreshing high volume stocks with new data
@@ -412,69 +434,117 @@ export default function MarketMonitor() {
           </CardContent>
         </Card>
 
-        {/* Bid Charts for All Indices */}
-        {allIndexBidData.map((indexData, idx) => {
-          const maxQty = Math.max(...indexData.levels.map(l => Math.max(l.bidQty, l.askQty)));
-          const totalBid = indexData.levels.reduce((sum, l) => sum + l.bidQty, 0);
-          const totalAsk = indexData.levels.reduce((sum, l) => sum + l.askQty, 0);
-          
-          return (
-            <Card key={indexData.name} className="hover-elevate" data-testid={`bid-chart-${idx}`}>
+        {/* Live Indian Indices */}
+        {indicesData?.indices && indicesData.indices.length > 0 ? (
+          indicesData.indices.map((index, idx) => (
+            <Card key={index.name} className="hover-elevate border-2 border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-transparent" data-testid={`index-card-${idx}`}>
               <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-primary" />
-                  {indexData.name}
+                  <BarChart3 className="w-4 h-4 text-yellow-500" />
+                  {index.name}
                 </CardTitle>
-                <Badge variant="outline" className="text-[10px]">Live</Badge>
+                <Badge variant="outline" className="text-[10px] text-yellow-500 border-yellow-500/40 bg-yellow-500/10">
+                  {isFetchingIndices ? 'Updating...' : 'LIVE'}
+                </Badge>
               </CardHeader>
-              <CardContent className="space-y-1">
-                <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
-                  <span>BID</span>
-                  <span>PRICE</span>
-                  <span>ASK</span>
+              <CardContent className="space-y-3">
+                <div className="text-center">
+                  <p className="text-2xl font-black font-mono text-yellow-400" style={{ textShadow: '0 0 10px rgba(234, 179, 8, 0.5)' }}>
+                    {index.lastPrice?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                  </p>
+                  <div className={`flex items-center justify-center gap-2 mt-1 ${index.pChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {index.pChange >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                    <span className="font-mono font-bold">
+                      {index.change >= 0 ? '+' : ''}{index.change?.toFixed(2)} ({index.pChange >= 0 ? '+' : ''}{index.pChange?.toFixed(2)}%)
+                    </span>
+                  </div>
                 </div>
-                {indexData.levels.map((level, i) => {
-                  const bidWidth = (level.bidQty / maxQty) * 100;
-                  const askWidth = (level.askQty / maxQty) * 100;
-                  
-                  return (
-                    <div key={i} className="flex items-center gap-1">
-                      <div className="w-1/3 flex justify-end">
-                        <div 
-                          className="h-4 bg-emerald-500/40 rounded-l flex items-center justify-end pr-1"
-                          style={{ width: `${bidWidth}%` }}
-                        >
-                          <span className="text-[9px] font-mono text-emerald-400">{(level.bidQty / 1000).toFixed(1)}K</span>
-                        </div>
-                      </div>
-                      <div className="w-1/3 text-center">
-                        <span className="text-[10px] font-mono font-bold">{level.price.toFixed(0)}</span>
-                      </div>
-                      <div className="w-1/3 flex justify-start">
-                        <div 
-                          className="h-4 bg-red-500/40 rounded-r flex items-center pl-1"
-                          style={{ width: `${askWidth}%` }}
-                        >
-                          <span className="text-[9px] font-mono text-red-400">{(level.askQty / 1000).toFixed(1)}K</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="flex justify-between mt-2 pt-2 border-t border-primary/20">
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-yellow-500/20">
                   <div className="text-center">
-                    <p className="text-[9px] text-muted-foreground">Total Bid</p>
-                    <p className="text-xs font-bold text-emerald-400 font-mono">{(totalBid / 1000).toFixed(1)}K</p>
+                    <p className="text-[10px] text-muted-foreground">DAY HIGH</p>
+                    <p className="text-xs font-bold font-mono text-yellow-400">{index.high?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[9px] text-muted-foreground">Total Ask</p>
-                    <p className="text-xs font-bold text-red-400 font-mono">{(totalAsk / 1000).toFixed(1)}K</p>
+                    <p className="text-[10px] text-muted-foreground">DAY LOW</p>
+                    <p className="text-xs font-bold font-mono text-yellow-400">{index.low?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-muted-foreground">OPEN</p>
+                    <p className="text-xs font-bold font-mono">{index.open?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] text-muted-foreground">PREV CLOSE</p>
+                    <p className="text-xs font-bold font-mono">{index.previousClose?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          );
-        })}
+          ))
+        ) : (
+          // Fallback to simulated data
+          allIndexBidData.map((indexData, idx) => {
+            const maxQty = Math.max(...indexData.levels.map(l => Math.max(l.bidQty, l.askQty)));
+            const totalBid = indexData.levels.reduce((sum, l) => sum + l.bidQty, 0);
+            const totalAsk = indexData.levels.reduce((sum, l) => sum + l.askQty, 0);
+            
+            return (
+              <Card key={indexData.name} className="hover-elevate border-2 border-yellow-500/30" data-testid={`bid-chart-${idx}`}>
+                <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-yellow-500" />
+                    {indexData.name}
+                  </CardTitle>
+                  <Badge variant="outline" className="text-[10px] text-yellow-500 border-yellow-500/40">Simulated</Badge>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                  <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                    <span>BID</span>
+                    <span>PRICE</span>
+                    <span>ASK</span>
+                  </div>
+                  {indexData.levels.map((level, i) => {
+                    const bidWidth = (level.bidQty / maxQty) * 100;
+                    const askWidth = (level.askQty / maxQty) * 100;
+                    
+                    return (
+                      <div key={i} className="flex items-center gap-1">
+                        <div className="w-1/3 flex justify-end">
+                          <div 
+                            className="h-4 bg-emerald-500/40 rounded-l flex items-center justify-end pr-1"
+                            style={{ width: `${bidWidth}%` }}
+                          >
+                            <span className="text-[9px] font-mono text-emerald-400">{(level.bidQty / 1000).toFixed(1)}K</span>
+                          </div>
+                        </div>
+                        <div className="w-1/3 text-center">
+                          <span className="text-[10px] font-mono font-bold text-yellow-400">{level.price.toFixed(0)}</span>
+                        </div>
+                        <div className="w-1/3 flex justify-start">
+                          <div 
+                            className="h-4 bg-red-500/40 rounded-r flex items-center pl-1"
+                            style={{ width: `${askWidth}%` }}
+                          >
+                            <span className="text-[9px] font-mono text-red-400">{(level.askQty / 1000).toFixed(1)}K</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between mt-2 pt-2 border-t border-yellow-500/20">
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground">Total Bid</p>
+                      <p className="text-xs font-bold text-emerald-400 font-mono">{(totalBid / 1000).toFixed(1)}K</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground">Total Ask</p>
+                      <p className="text-xs font-bold text-red-400 font-mono">{(totalAsk / 1000).toFixed(1)}K</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
         </div>
       </div>
     </Layout>
