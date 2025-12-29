@@ -32,13 +32,13 @@ interface NseData {
 
 export default function StockLists() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [nextRefresh, setNextRefresh] = useState(30);
+  const [nextRefresh, setNextRefresh] = useState(5);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery<NseData>({
     queryKey: ['/api/nse/gainers-losers'],
-    refetchInterval: 1800000,
-    staleTime: 1800000,
+    refetchInterval: 5000,
+    staleTime: 5000,
   });
 
   useEffect(() => {
@@ -48,17 +48,15 @@ export default function StockLists() {
 
   useEffect(() => {
     const countdownInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - lastRefreshTime.getTime()) / 60000);
-      const remaining = Math.max(0, 30 - elapsed);
-      setNextRefresh(remaining);
-      
-      if (remaining === 0) {
-        setLastRefreshTime(new Date());
-        setNextRefresh(30);
-      }
-    }, 60000);
+      setNextRefresh(prev => {
+        if (prev <= 1) {
+          return 5;
+        }
+        return prev - 1;
+      });
+    }, 1000);
     return () => clearInterval(countdownInterval);
-  }, [lastRefreshTime]);
+  }, []);
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['/api/nse/gainers-losers'] });
@@ -113,7 +111,7 @@ export default function StockLists() {
             <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-md px-3 py-2">
               <RefreshCw className="w-4 h-4 text-primary" />
               <span className="text-xs text-muted-foreground">Next refresh:</span>
-              <span className="font-mono font-bold text-sm" data-testid="text-next-refresh">{nextRefresh} min</span>
+              <span className="font-mono font-bold text-sm" data-testid="text-next-refresh">{nextRefresh}s</span>
             </div>
             <Button 
               variant="default" 

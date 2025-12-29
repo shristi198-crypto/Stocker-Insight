@@ -49,15 +49,15 @@ export default function MarketMonitor() {
     { symbol: "HDFCBANK", score: 50, signals: ["Volume", "Price"], hasNews: false, hasVolume: true, hasCorporate: false, hasPrice: true },
   ]);
   
-  const [nextRefresh, setNextRefresh] = useState(30);
+  const [nextRefresh, setNextRefresh] = useState(5);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch live Indian indices
+  // Fetch live Indian indices - refresh every 5 seconds
   const { data: indicesData, refetch: refetchIndices, isFetching: isFetchingIndices } = useQuery<{ indices: IndexData[], lastUpdated: string }>({
     queryKey: ['/api/nse/indices'],
-    refetchInterval: 1800000,
-    staleTime: 1800000,
+    refetchInterval: 5000,
+    staleTime: 5000,
   });
 
   const [highVolumeStocks, setHighVolumeStocks] = useState([
@@ -144,19 +144,18 @@ export default function MarketMonitor() {
     { symbol: "ADANIENT", change: 2.8 },
   ]);
 
-  // 30-minute auto-refresh timer
+  // 5-second auto-refresh timer
   useEffect(() => {
     const countdownInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - lastRefreshTime.getTime()) / 60000);
-      const remaining = Math.max(0, 30 - elapsed);
-      setNextRefresh(remaining);
-      
-      if (remaining === 0) {
-        handleRefresh();
-      }
-    }, 60000);
+      setNextRefresh(prev => {
+        if (prev <= 1) {
+          return 5;
+        }
+        return prev - 1;
+      });
+    }, 1000);
     return () => clearInterval(countdownInterval);
-  }, [lastRefreshTime]);
+  }, []);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -301,7 +300,7 @@ export default function MarketMonitor() {
             <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-md px-3 py-2">
               <Clock className="w-4 h-4 text-primary" />
               <span className="text-xs text-muted-foreground">Next refresh:</span>
-              <span className="font-mono font-bold text-sm" data-testid="text-next-refresh-monitor">{nextRefresh} min</span>
+              <span className="font-mono font-bold text-sm" data-testid="text-next-refresh-monitor">{nextRefresh}s</span>
             </div>
             <Button 
               variant="default" 
