@@ -32,11 +32,13 @@ interface NseData {
 
 export default function StockLists() {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [nextRefresh, setNextRefresh] = useState(30);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery<NseData>({
     queryKey: ['/api/nse/gainers-losers'],
-    refetchInterval: 60000,
-    staleTime: 30000,
+    refetchInterval: 1800000,
+    staleTime: 1800000,
   });
 
   useEffect(() => {
@@ -44,9 +46,25 @@ export default function StockLists() {
     return () => clearInterval(timeInterval);
   }, []);
 
+  useEffect(() => {
+    const countdownInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - lastRefreshTime.getTime()) / 60000);
+      const remaining = Math.max(0, 30 - elapsed);
+      setNextRefresh(remaining);
+      
+      if (remaining === 0) {
+        setLastRefreshTime(new Date());
+        setNextRefresh(30);
+      }
+    }, 60000);
+    return () => clearInterval(countdownInterval);
+  }, [lastRefreshTime]);
+
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['/api/nse/gainers-losers'] });
     refetch();
+    setLastRefreshTime(new Date());
+    setNextRefresh(30);
   };
 
   const formatVolume = (vol: number) => {
@@ -92,15 +110,20 @@ export default function StockLists() {
               </span>
               <Badge variant="outline" className="text-[10px] ml-1">IST</Badge>
             </div>
+            <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-md px-3 py-2">
+              <RefreshCw className="w-4 h-4 text-primary" />
+              <span className="text-xs text-muted-foreground">Next refresh:</span>
+              <span className="font-mono font-bold text-sm" data-testid="text-next-refresh">{nextRefresh} min</span>
+            </div>
             <Button 
-              variant="outline" 
-              size="sm" 
+              variant="default" 
               onClick={handleRefresh}
               disabled={isFetching}
               data-testid="button-refresh-stocks"
+              className="gap-2"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-              Refresh
+              <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+              {isFetching ? 'Refreshing...' : 'Refresh Now'}
             </Button>
           </div>
         </div>
