@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, Zap, Building2, FileText, BarChart3, Newspaper, Activity, Building, TrendingDown } from "lucide-react";
+import { TrendingUp, Zap, Building2, FileText, BarChart3, Newspaper, Activity, Building, TrendingDown, RefreshCw, Clock } from "lucide-react";
 import { Layout } from "@/components/Layout";
 
 interface BidAskLevel {
@@ -34,6 +35,10 @@ export default function MarketMonitor() {
     { symbol: "RELIANCE", score: 75, signals: ["News", "Volume", "Price"], hasNews: true, hasVolume: true, hasCorporate: false, hasPrice: true },
     { symbol: "HDFCBANK", score: 50, signals: ["Volume", "Price"], hasNews: false, hasVolume: true, hasCorporate: false, hasPrice: true },
   ]);
+  
+  const [nextRefresh, setNextRefresh] = useState(30);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [highVolumeStocks, setHighVolumeStocks] = useState([
     { symbol: "RELIANCE", volume: "12.4M", change: "+1.2%" },
@@ -118,6 +123,50 @@ export default function MarketMonitor() {
     { symbol: "HDFCBANK", change: 1.5 },
     { symbol: "ADANIENT", change: 2.8 },
   ]);
+
+  // 30-minute auto-refresh timer
+  useEffect(() => {
+    const countdownInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - lastRefreshTime.getTime()) / 60000);
+      const remaining = Math.max(0, 30 - elapsed);
+      setNextRefresh(remaining);
+      
+      if (remaining === 0) {
+        handleRefresh();
+      }
+    }, 60000);
+    return () => clearInterval(countdownInterval);
+  }, [lastRefreshTime]);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    
+    // Refresh all data
+    setMagicStocks(computeMagicList());
+    
+    // Simulate refreshing high volume stocks with new data
+    setHighVolumeStocks(prev => prev.map(stock => ({
+      ...stock,
+      volume: `${(Math.random() * 15 + 5).toFixed(1)}M`,
+      change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 3).toFixed(1)}%`
+    })));
+    
+    // Refresh corporate events
+    setCorporateEvents(prev => {
+      const newEvents = companies.slice(0, 5).map((company, i) => ({
+        company,
+        type: orderTypes[Math.floor(Math.random() * orderTypes.length)],
+        details: `${projects[Math.floor(Math.random() * projects.length)]} Rs. ${Math.floor(Math.random() * 2000 + 100)} Cr`,
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+      }));
+      return newEvents;
+    });
+    
+    setLastRefreshTime(new Date());
+    setNextRefresh(30);
+    
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
 
   const computeMagicList = () => {
     const stockScores: { [key: string]: MagicStock } = {};
@@ -216,13 +265,32 @@ export default function MarketMonitor() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-black tracking-tighter uppercase italic text-foreground">
-            Market Monitor
-          </h1>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Live Connection Active</span>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black tracking-tighter uppercase italic text-foreground">
+              Market Monitor
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Live Connection Active</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-md px-3 py-2">
+              <Clock className="w-4 h-4 text-primary" />
+              <span className="text-xs text-muted-foreground">Next refresh:</span>
+              <span className="font-mono font-bold text-sm" data-testid="text-next-refresh-monitor">{nextRefresh} min</span>
+            </div>
+            <Button 
+              variant="default" 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              data-testid="button-refresh-monitor"
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh Now'}
+            </Button>
           </div>
         </div>
 
