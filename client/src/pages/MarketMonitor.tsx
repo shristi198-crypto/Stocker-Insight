@@ -444,7 +444,7 @@ export default function MarketMonitor() {
                   {index.name}
                 </CardTitle>
                 <Badge variant="outline" className="text-[10px] text-yellow-500 border-yellow-500/40 bg-yellow-500/10">
-                  {isFetchingIndices ? 'Updating...' : 'LIVE'}
+                  {isFetchingIndices ? 'Updating...' : 'INDIA INDEX'}
                 </Badge>
               </CardHeader>
               <CardContent className="space-y-3">
