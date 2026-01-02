@@ -65,13 +65,19 @@ export default function News() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-3xl font-black tracking-tighter uppercase italic text-foreground" data-testid="text-page-title">
             News & Sentiment
           </h1>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">AI-Powered Analysis</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Live Updates: 5s</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">AI-Powered Analysis</span>
+            </div>
           </div>
         </div>
 

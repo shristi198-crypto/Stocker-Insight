@@ -21,7 +21,7 @@ export function useNews() {
       if (!res.ok) throw new Error("Failed to fetch news");
       return res.json();
     },
-    refetchInterval: 60000,
+    refetchInterval: 5000,
   });
 }
 

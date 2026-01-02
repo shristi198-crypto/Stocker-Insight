@@ -2,8 +2,9 @@ import { useNews, useRefreshNews, type NewsItem } from "@/hooks/use-news";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, TrendingUp, TrendingDown, Minus, Newspaper, Loader2 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { RefreshCw, TrendingUp, TrendingDown, Minus, Newspaper, Loader2, Clock } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
+import { useState, useEffect } from "react";
 
 function SentimentBadge({ sentiment, score, newsId }: { sentiment: string; score: string; newsId?: number }) {
   const config = {
@@ -92,18 +93,33 @@ function NewsCard({ item }: { item: NewsItem }) {
 }
 
 export function NewsFeed({ compact = false }: { compact?: boolean }) {
-  const { data: news, isLoading } = useNews();
+  const { data: news, isLoading, dataUpdatedAt } = useNews();
   const { mutate: refreshNews, isPending: isRefreshing } = useRefreshNews();
+  const [lastUpdated, setLastUpdated] = useState<string>("");
+
+  useEffect(() => {
+    if (dataUpdatedAt) {
+      setLastUpdated(format(new Date(dataUpdatedAt), "HH:mm:ss"));
+    }
+  }, [dataUpdatedAt]);
 
   const displayNews = compact ? news?.slice(0, 5) : news;
 
   return (
     <Card className="border-2 border-primary/30">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-        <CardTitle className="text-sm font-bold flex items-center gap-2">
-          <Newspaper className="w-4 h-4 text-primary" />
-          LIVE NEWS FEED
-        </CardTitle>
+        <div className="flex items-center gap-3">
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <Newspaper className="w-4 h-4 text-primary" />
+            LIVE NEWS FEED
+          </CardTitle>
+          {lastUpdated && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground" data-testid="text-last-updated">
+              <Clock className="w-3 h-3" />
+              <span>Updated: {lastUpdated}</span>
+            </div>
+          )}
+        </div>
         <Button
           variant="ghost"
           size="icon"
