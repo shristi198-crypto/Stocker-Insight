@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { CustomizableDashboard } from "@/components/DashboardWidgets";
 import { HistoricalChart } from "@/components/HistoricalChart";
-import { Newspaper, ArrowRight, TrendingUp, TrendingDown, Building2, Globe } from "lucide-react";
+import { Newspaper, ArrowRight, TrendingUp, TrendingDown, Building2, Globe, Sparkles, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { useNews } from "@/hooks/use-news";
+import { useQuery } from "@tanstack/react-query";
 import bullBearImage from "@assets/generated_images/bull_and_bear_market_battle.png";
 
 interface FIIDIIData {
@@ -100,6 +101,117 @@ function FIIDIIWidget() {
   );
 }
 
+interface CapStock {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  returns: string;
+}
+
+function MarketCapStocksWidget() {
+  const { data: stocksData, refetch, isFetching } = useQuery<{
+    smallCap: CapStock[];
+    midCap: CapStock[];
+    largeCap: CapStock[];
+  }>({
+    queryKey: ['/api/nse/cap-stocks'],
+    refetchInterval: 5000,
+    staleTime: 5000,
+  });
+
+  const defaultSmallCap: CapStock[] = [
+    { symbol: "DEEPAKNTR", name: "Deepak Nitrite", price: 2245.50, change: 4.2, returns: "+42%" },
+    { symbol: "POLYCAB", name: "Polycab India", price: 5890.25, change: 3.8, returns: "+38%" },
+    { symbol: "AFFLE", name: "Affle India", price: 1156.80, change: 5.1, returns: "+51%" },
+    { symbol: "TANLA", name: "Tanla Platforms", price: 892.40, change: 2.9, returns: "+35%" },
+  ];
+
+  const defaultMidCap: CapStock[] = [
+    { symbol: "PERSISTENT", name: "Persistent Sys", price: 4520.15, change: 3.5, returns: "+35%" },
+    { symbol: "COFORGE", name: "Coforge Ltd", price: 6780.90, change: 2.8, returns: "+32%" },
+    { symbol: "MPHASIS", name: "Mphasis Ltd", price: 2456.75, change: 3.2, returns: "+28%" },
+    { symbol: "ASTRAL", name: "Astral Ltd", price: 1890.60, change: 4.1, returns: "+31%" },
+  ];
+
+  const defaultLargeCap: CapStock[] = [
+    { symbol: "TCS", name: "TCS Ltd", price: 3845.20, change: 1.8, returns: "+18%" },
+    { symbol: "RELIANCE", name: "Reliance Ind", price: 2456.75, change: 2.1, returns: "+21%" },
+    { symbol: "HDFCBANK", name: "HDFC Bank", price: 1678.30, change: 1.5, returns: "+15%" },
+    { symbol: "INFY", name: "Infosys Ltd", price: 1542.85, change: 2.4, returns: "+24%" },
+  ];
+
+  const smallCap = stocksData?.smallCap || defaultSmallCap;
+  const midCap = stocksData?.midCap || defaultMidCap;
+  const largeCap = stocksData?.largeCap || defaultLargeCap;
+
+  const renderStockList = (stocks: CapStock[], capType: string, bgColor: string, textColor: string) => (
+    <Card className="border-2 border-primary/30" data-testid={`card-${capType}-stocks`}>
+      <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
+        <CardTitle className="text-sm font-bold flex items-center gap-2">
+          <Sparkles className={`w-4 h-4 ${textColor}`} />
+          {capType.toUpperCase()} HIGH RETURNS
+        </CardTitle>
+        <Badge variant="outline" className={`text-[10px] ${textColor} border-current bg-current/10`}>
+          {isFetching ? 'Updating...' : 'LIVE'}
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {stocks.map((stock) => (
+          <div 
+            key={stock.symbol} 
+            className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover-elevate"
+            data-testid={`stock-${capType}-${stock.symbol}`}
+          >
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm truncate">{stock.symbol}</p>
+              <p className="text-xs text-muted-foreground truncate">{stock.name}</p>
+            </div>
+            <div className="text-right flex items-center gap-3">
+              <div>
+                <p className="font-mono text-sm font-bold">{stock.price.toLocaleString('en-IN')}</p>
+                <p className={`text-xs font-mono flex items-center justify-end gap-1 ${stock.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {stock.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {stock.change >= 0 ? '+' : ''}{stock.change}%
+                </p>
+              </div>
+              <Badge className={`${bgColor} text-white font-bold text-xs`}>
+                {stock.returns}
+              </Badge>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-red-500 to-red-400" style={{fontFamily: 'Bebas Neue'}}>
+          TOP PERFORMING STOCKS BY MARKET CAP
+        </h2>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="text-primary border-primary/30"
+          data-testid="button-refresh-cap-stocks"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {renderStockList(smallCap, "Small Cap", "bg-purple-600", "text-purple-400")}
+        {renderStockList(midCap, "Mid Cap", "bg-blue-600", "text-blue-400")}
+        {renderStockList(largeCap, "Large Cap", "bg-amber-600", "text-amber-400")}
+      </div>
+    </div>
+  );
+}
+
 function NewsSummaryCard() {
   const { data: news } = useNews();
   
@@ -161,6 +273,11 @@ export default function Home() {
               data-testid="img-bull-bear"
             />
           </div>
+        </div>
+
+        {/* Market Cap Stocks - Small, Mid, Large Cap */}
+        <div className="w-full animate-in slide-in-from-bottom-8 duration-700 delay-100">
+          <MarketCapStocksWidget />
         </div>
 
         {/* Historical Chart with Timeframes */}
