@@ -60,13 +60,15 @@ function NewsCard({ item }: { item: NewsItem }) {
             <span className="text-[10px] text-muted-foreground" data-testid={`text-news-time-${item.id}`}>{timeAgo}</span>
           </div>
           <h4 
-            className="text-sm font-semibold text-foreground leading-tight mb-1"
+            className="text-sm text-foreground leading-tight mb-1"
+            style={{ fontFamily: 'Calibri, sans-serif' }}
             data-testid={`text-news-title-${item.id}`}
           >
             {item.title}
           </h4>
           <p 
             className="text-xs text-muted-foreground line-clamp-2"
+            style={{ fontFamily: 'Calibri, sans-serif' }}
             data-testid={`text-news-summary-${item.id}`}
           >
             {item.summary}
@@ -109,7 +111,7 @@ export function NewsFeed({ compact = false }: { compact?: boolean }) {
     <Card className="border-2 border-primary/30">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
         <div className="flex items-center gap-3">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
+          <CardTitle className="text-sm flex items-center gap-2" style={{ fontFamily: 'Calibri, sans-serif' }}>
             <Newspaper className="w-4 h-4 text-primary" />
             LIVE NEWS FEED
           </CardTitle>

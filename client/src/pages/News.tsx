@@ -24,7 +24,7 @@ function SentimentSummary() {
   return (
     <Card className="border-2 border-primary/30" data-testid="card-sentiment-summary">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-bold flex items-center gap-2">
+        <CardTitle className="text-sm flex items-center gap-2" style={{ fontFamily: 'Calibri, sans-serif' }}>
           <BarChart3 className="w-4 h-4 text-primary" />
           MARKET SENTIMENT ANALYSIS
         </CardTitle>
@@ -66,7 +66,7 @@ export default function News() {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h1 className="text-3xl font-black tracking-tighter uppercase italic text-foreground" data-testid="text-page-title">
+          <h1 className="text-3xl tracking-tighter uppercase italic text-foreground" style={{ fontFamily: 'Calibri, sans-serif' }} data-testid="text-page-title">
             News & Sentiment
           </h1>
           <div className="flex items-center gap-4">
