@@ -140,6 +140,143 @@ function calculateRSI(data: number[], period: number = 14): (number | null)[] {
   return result;
 }
 
+// Calculate MACD
+function calculateMACD(data: number[]): { macd: (number | null)[]; signal: (number | null)[]; histogram: (number | null)[] } {
+  const ema12 = calculateEMA(data, 12);
+  const ema26 = calculateEMA(data, 26);
+  const macd: (number | null)[] = [];
+  
+  for (let i = 0; i < data.length; i++) {
+    if (ema12[i] === null || ema26[i] === null) {
+      macd.push(null);
+    } else {
+      macd.push(ema12[i]! - ema26[i]!);
+    }
+  }
+  
+  const signal = calculateEMA(macd.filter(v => v !== null) as number[], 9);
+  const paddedSignal: (number | null)[] = new Array(data.length - signal.length).fill(null).concat(signal);
+  
+  const histogram: (number | null)[] = [];
+  for (let i = 0; i < data.length; i++) {
+    if (macd[i] === null || paddedSignal[i] === null) {
+      histogram.push(null);
+    } else {
+      histogram.push(macd[i]! - paddedSignal[i]!);
+    }
+  }
+  
+  return { macd, signal: paddedSignal, histogram };
+}
+
+// Generate Algo Trading Buy/Sell Signals
+interface TradeSignal {
+  index: number;
+  date: Date;
+  price: number;
+  type: 'BUY' | 'SELL';
+  strength: number; // 1-3 (weak, medium, strong)
+  reason: string;
+}
+
+function generateAlgoSignals(
+  dates: Date[],
+  closes: number[],
+  highs: number[],
+  lows: number[]
+): TradeSignal[] {
+  const signals: TradeSignal[] = [];
+  
+  // Calculate indicators
+  const sma20 = calculateSMA(closes, 20);
+  const sma50 = calculateSMA(closes, 50);
+  const ema12 = calculateEMA(closes, 12);
+  const ema26 = calculateEMA(closes, 26);
+  const rsi = calculateRSI(closes, 14);
+  const bb = calculateBollingerBands(closes, 20, 2);
+  
+  for (let i = 50; i < closes.length; i++) {
+    let buyScore = 0;
+    let sellScore = 0;
+    const reasons: string[] = [];
+    
+    // Golden Cross / Death Cross (SMA 20 vs SMA 50)
+    if (sma20[i] !== null && sma50[i] !== null && sma20[i-1] !== null && sma50[i-1] !== null) {
+      if (sma20[i-1]! < sma50[i-1]! && sma20[i]! > sma50[i]!) {
+        buyScore += 2;
+        reasons.push("Golden Cross");
+      } else if (sma20[i-1]! > sma50[i-1]! && sma20[i]! < sma50[i]!) {
+        sellScore += 2;
+        reasons.push("Death Cross");
+      }
+    }
+    
+    // EMA Crossover
+    if (ema12[i] !== null && ema26[i] !== null && ema12[i-1] !== null && ema26[i-1] !== null) {
+      if (ema12[i-1]! < ema26[i-1]! && ema12[i]! > ema26[i]!) {
+        buyScore += 1;
+        reasons.push("EMA Bullish");
+      } else if (ema12[i-1]! > ema26[i-1]! && ema12[i]! < ema26[i]!) {
+        sellScore += 1;
+        reasons.push("EMA Bearish");
+      }
+    }
+    
+    // RSI Oversold/Overbought
+    if (rsi[i] !== null && rsi[i-1] !== null) {
+      if (rsi[i-1]! < 30 && rsi[i]! > 30) {
+        buyScore += 1;
+        reasons.push("RSI Oversold Recovery");
+      } else if (rsi[i-1]! > 70 && rsi[i]! < 70) {
+        sellScore += 1;
+        reasons.push("RSI Overbought Reversal");
+      }
+    }
+    
+    // Bollinger Band Breakout
+    if (bb.lower[i] !== null && bb.upper[i] !== null) {
+      if (closes[i-1] < bb.lower[i-1]! && closes[i] > bb.lower[i]!) {
+        buyScore += 1;
+        reasons.push("BB Lower Bounce");
+      } else if (closes[i-1] > bb.upper[i-1]! && closes[i] < bb.upper[i]!) {
+        sellScore += 1;
+        reasons.push("BB Upper Rejection");
+      }
+    }
+    
+    // Price above/below moving averages
+    if (sma20[i] !== null && closes[i-1] < sma20[i-1]! && closes[i] > sma20[i]!) {
+      buyScore += 0.5;
+    } else if (sma20[i] !== null && closes[i-1] > sma20[i-1]! && closes[i] < sma20[i]!) {
+      sellScore += 0.5;
+    }
+    
+    // Generate signal if score is significant
+    if (buyScore >= 2 && sellScore < 1) {
+      signals.push({
+        index: i,
+        date: dates[i],
+        price: closes[i],
+        type: 'BUY',
+        strength: buyScore >= 3 ? 3 : buyScore >= 2.5 ? 2 : 1,
+        reason: reasons.join(" + ")
+      });
+    } else if (sellScore >= 2 && buyScore < 1) {
+      signals.push({
+        index: i,
+        date: dates[i],
+        price: closes[i],
+        type: 'SELL',
+        strength: sellScore >= 3 ? 3 : sellScore >= 2.5 ? 2 : 1,
+        reason: reasons.join(" + ")
+      });
+    }
+  }
+  
+  // Limit to most recent signals to avoid clutter
+  return signals.slice(-10);
+}
+
 export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolChange }: HistoricalChartProps) {
   const [selectedSymbol, setSelectedSymbol] = useState(initialSymbol);
   const [selectedTimeframe, setSelectedTimeframe] = useState("1M");
@@ -160,6 +297,9 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
   
   // Price levels
   const [showSupportResistance, setShowSupportResistance] = useState(false);
+  
+  // Algo Trading Signals
+  const [showAlgoSignals, setShowAlgoSignals] = useState(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery<HistoricalData>({
     queryKey: ["/api/historical", selectedSymbol, selectedTimeframe],
@@ -397,6 +537,60 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
     });
   }
 
+  // Add Algo Trading Buy/Sell Signals
+  if (showAlgoSignals && dates.length > 50) {
+    const algoSignals = generateAlgoSignals(dates, closes, highs, lows);
+    
+    const buySignals = algoSignals.filter(s => s.type === 'BUY');
+    const sellSignals = algoSignals.filter(s => s.type === 'SELL');
+    
+    if (buySignals.length > 0) {
+      traces.push({
+        type: "scatter",
+        mode: "markers+text",
+        x: buySignals.map(s => s.date),
+        y: buySignals.map(s => s.price * 0.97), // Below price
+        marker: {
+          symbol: "triangle-up",
+          size: buySignals.map(s => 10 + s.strength * 4),
+          color: "#10B981",
+          line: { color: "#ffffff", width: 1 }
+        },
+        text: buySignals.map(() => "BUY"),
+        textposition: "bottom center",
+        textfont: { color: "#10B981", size: 9, family: "JetBrains Mono" },
+        name: "Buy Signal",
+        yaxis: "y2",
+        hovertemplate: buySignals.map(s => 
+          `<b>BUY SIGNAL</b><br>Price: ${s.price.toFixed(2)}<br>Strength: ${"*".repeat(s.strength)}<br>Reason: ${s.reason}<extra></extra>`
+        ),
+      });
+    }
+    
+    if (sellSignals.length > 0) {
+      traces.push({
+        type: "scatter",
+        mode: "markers+text",
+        x: sellSignals.map(s => s.date),
+        y: sellSignals.map(s => s.price * 1.03), // Above price
+        marker: {
+          symbol: "triangle-down",
+          size: sellSignals.map(s => 10 + s.strength * 4),
+          color: "#EF4444",
+          line: { color: "#ffffff", width: 1 }
+        },
+        text: sellSignals.map(() => "SELL"),
+        textposition: "top center",
+        textfont: { color: "#EF4444", size: 9, family: "JetBrains Mono" },
+        name: "Sell Signal",
+        yaxis: "y2",
+        hovertemplate: sellSignals.map(s => 
+          `<b>SELL SIGNAL</b><br>Price: ${s.price.toFixed(2)}<br>Strength: ${"*".repeat(s.strength)}<br>Reason: ${s.reason}<extra></extra>`
+        ),
+      });
+    }
+  }
+
   if (showEvents && events.length > 0) {
     const eventColors: { [key: string]: string } = {
       "Corporate": "#A855F7",
@@ -600,6 +794,13 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
                         Support/Resistance
                       </Label>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="algo" checked={showAlgoSignals} onCheckedChange={(c) => setShowAlgoSignals(!!c)} />
+                      <Label htmlFor="algo" className="text-sm flex items-center gap-2">
+                        <Zap className="w-3 h-3 text-yellow-500" />
+                        Algo Buy/Sell Signals
+                      </Label>
+                    </div>
                   </div>
                   <div className="border-t pt-3">
                     <h4 className="font-bold text-sm mb-2">Compare With</h4>
@@ -734,7 +935,7 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
       </CardHeader>
 
       {/* Active Indicators Legend */}
-      {(showSMA20 || showSMA50 || showEMA20 || showBollingerBands || showRSI || compareSymbol) && (
+      {(showSMA20 || showSMA50 || showEMA20 || showBollingerBands || showRSI || compareSymbol || showAlgoSignals) && (
         <div className="px-4 pb-2 flex flex-wrap gap-2">
           {showSMA20 && (
             <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-500/40 bg-amber-500/10">
@@ -769,6 +970,12 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
           {showSupportResistance && (
             <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/40 bg-emerald-500/10">
               S/R Levels
+            </Badge>
+          )}
+          {showAlgoSignals && (
+            <Badge variant="outline" className="text-[10px] text-yellow-500 border-yellow-500/40 bg-yellow-500/10">
+              <Zap className="w-2 h-2 mr-1" />
+              Algo Signals
             </Badge>
           )}
         </div>
