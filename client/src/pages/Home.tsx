@@ -337,7 +337,7 @@ export default function Home() {
             <img 
               src={currentMoodConfig.image} 
               alt={currentMoodConfig.alt} 
-              className="w-full max-h-40 md:max-h-56 object-cover transition-all duration-500"
+              className="w-full h-[260px] md:h-[300px] object-cover transition-all duration-500"
               data-testid="img-market-mood"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
