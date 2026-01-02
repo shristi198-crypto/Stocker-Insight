@@ -2,9 +2,14 @@ import { useNews, useRefreshNews, type NewsItem } from "@/hooks/use-news";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, TrendingUp, TrendingDown, Minus, Newspaper, Loader2, Clock } from "lucide-react";
+import { RefreshCw, TrendingUp, TrendingDown, Minus, Newspaper, Loader2, Clock, Zap, Activity } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { useState, useEffect } from "react";
+
+function getISTTime(): string {
+  return formatInTimeZone(new Date(), "Asia/Kolkata", "hh:mm:ss a 'IST'");
+}
 
 function SentimentBadge({ sentiment, score, newsId }: { sentiment: string; score: string; newsId?: number }) {
   const config = {
@@ -95,32 +100,47 @@ function NewsCard({ item }: { item: NewsItem }) {
 }
 
 export function NewsFeed({ compact = false }: { compact?: boolean }) {
-  const { data: news, isLoading, dataUpdatedAt } = useNews();
+  const { data: news, isLoading, dataUpdatedAt, isFetching } = useNews();
   const { mutate: refreshNews, isPending: isRefreshing } = useRefreshNews();
-  const [lastUpdated, setLastUpdated] = useState<string>("");
+  const [lastUpdatedIST, setLastUpdatedIST] = useState<string>(getISTTime());
+  const [refreshCount, setRefreshCount] = useState(0);
 
   useEffect(() => {
     if (dataUpdatedAt) {
-      setLastUpdated(format(new Date(dataUpdatedAt), "HH:mm:ss"));
+      setLastUpdatedIST(getISTTime());
+      setRefreshCount(c => c + 1);
     }
   }, [dataUpdatedAt]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdatedIST(getISTTime());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const displayNews = compact ? news?.slice(0, 5) : news;
 
   return (
     <Card className="border-2 border-primary/30">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <CardTitle className="text-sm flex items-center gap-2" style={{ fontFamily: 'Calibri, sans-serif' }}>
             <Newspaper className="w-4 h-4 text-primary" />
             LIVE NEWS FEED
           </CardTitle>
-          {lastUpdated && (
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground" data-testid="text-last-updated">
-              <Clock className="w-3 h-3" />
-              <span>Updated: {lastUpdated}</span>
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1 ${isFetching ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+              <Activity className={`w-3 h-3 ${isFetching ? 'animate-pulse' : ''}`} />
+              <span className="text-[10px]" data-testid="text-last-updated-ist">
+                {lastUpdatedIST}
+              </span>
             </div>
-          )}
+            <Badge variant="outline" className="text-[10px] bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+              <Zap className="w-3 h-3 mr-1" />
+              Auto-refresh: 5s
+            </Badge>
+          </div>
         </div>
         <Button
           variant="ghost"

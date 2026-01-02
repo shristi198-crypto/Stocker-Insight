@@ -2,8 +2,14 @@ import { Layout } from "@/components/Layout";
 import { NewsFeed } from "@/components/NewsFeed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, BarChart3, Activity } from "lucide-react";
 import { useNews } from "@/hooks/use-news";
+import { formatInTimeZone } from "date-fns-tz";
+import { useState, useEffect } from "react";
+
+function getISTTime(): string {
+  return formatInTimeZone(new Date(), "Asia/Kolkata", "hh:mm:ss a 'IST'");
+}
 
 function SentimentSummary() {
   const { data: news } = useNews();
@@ -62,6 +68,15 @@ function SentimentSummary() {
 }
 
 export default function News() {
+  const [currentIST, setCurrentIST] = useState(getISTTime());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIST(getISTTime());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -69,7 +84,13 @@ export default function News() {
           <h1 className="text-3xl tracking-tighter uppercase italic text-foreground" style={{ fontFamily: 'Calibri, sans-serif' }} data-testid="text-page-title">
             News & Sentiment
           </h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2 bg-card/50 px-3 py-1.5 rounded-md border border-primary/20">
+              <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
+              <span className="text-xs font-mono text-emerald-400" data-testid="text-current-ist">
+                {currentIST}
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Live Updates: 5s</span>

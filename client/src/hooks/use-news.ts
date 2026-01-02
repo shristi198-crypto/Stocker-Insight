@@ -11,6 +11,7 @@ export interface NewsItem {
   relatedStocks: string[] | null;
   category: string;
   createdAt: string | null;
+  lastUpdatedIST?: string;
 }
 
 export function useNews() {
