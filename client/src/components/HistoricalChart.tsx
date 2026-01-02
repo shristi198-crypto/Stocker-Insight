@@ -5,8 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, TrendingDown, Calendar, Activity, Newspaper, Building, Zap, RefreshCw } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, Activity, Newspaper, Building, Zap, RefreshCw, Maximize2, Minimize2, BarChart2, LineChart, Layers, Target, Settings } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 interface OHLCData {
   date: string;
@@ -52,12 +56,110 @@ const POPULAR_STOCKS = [
   "BHARTIARTL", "ITC", "SBIN", "LT", "TATASTEEL"
 ];
 
+// Calculate Simple Moving Average
+function calculateSMA(data: number[], period: number): (number | null)[] {
+  const result: (number | null)[] = [];
+  for (let i = 0; i < data.length; i++) {
+    if (i < period - 1) {
+      result.push(null);
+    } else {
+      const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+      result.push(sum / period);
+    }
+  }
+  return result;
+}
+
+// Calculate Exponential Moving Average
+function calculateEMA(data: number[], period: number): (number | null)[] {
+  const result: (number | null)[] = [];
+  const multiplier = 2 / (period + 1);
+  let ema: number | null = null;
+  
+  for (let i = 0; i < data.length; i++) {
+    if (i < period - 1) {
+      result.push(null);
+    } else if (i === period - 1) {
+      ema = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
+      result.push(ema);
+    } else {
+      ema = (data[i] - ema!) * multiplier + ema!;
+      result.push(ema);
+    }
+  }
+  return result;
+}
+
+// Calculate Bollinger Bands
+function calculateBollingerBands(data: number[], period: number = 20, stdDev: number = 2): { upper: (number | null)[]; middle: (number | null)[]; lower: (number | null)[] } {
+  const sma = calculateSMA(data, period);
+  const upper: (number | null)[] = [];
+  const lower: (number | null)[] = [];
+  
+  for (let i = 0; i < data.length; i++) {
+    if (i < period - 1 || sma[i] === null) {
+      upper.push(null);
+      lower.push(null);
+    } else {
+      const slice = data.slice(i - period + 1, i + 1);
+      const mean = sma[i]!;
+      const variance = slice.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / period;
+      const std = Math.sqrt(variance);
+      upper.push(mean + stdDev * std);
+      lower.push(mean - stdDev * std);
+    }
+  }
+  
+  return { upper, middle: sma, lower };
+}
+
+// Calculate RSI
+function calculateRSI(data: number[], period: number = 14): (number | null)[] {
+  const result: (number | null)[] = [];
+  const gains: number[] = [];
+  const losses: number[] = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    const change = data[i] - data[i - 1];
+    gains.push(change > 0 ? change : 0);
+    losses.push(change < 0 ? Math.abs(change) : 0);
+  }
+  
+  for (let i = 0; i < data.length; i++) {
+    if (i < period) {
+      result.push(null);
+    } else {
+      const avgGain = gains.slice(i - period, i).reduce((a, b) => a + b, 0) / period;
+      const avgLoss = losses.slice(i - period, i).reduce((a, b) => a + b, 0) / period;
+      const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+      const rsi = 100 - (100 / (1 + rs));
+      result.push(rsi);
+    }
+  }
+  
+  return result;
+}
+
 export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolChange }: HistoricalChartProps) {
   const [selectedSymbol, setSelectedSymbol] = useState(initialSymbol);
   const [selectedTimeframe, setSelectedTimeframe] = useState("1M");
   const [chartType, setChartType] = useState<"candlestick" | "line">("candlestick");
   const [showEvents, setShowEvents] = useState(true);
   const [showVolume, setShowVolume] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // Technical Indicators
+  const [showSMA20, setShowSMA20] = useState(false);
+  const [showSMA50, setShowSMA50] = useState(false);
+  const [showEMA20, setShowEMA20] = useState(false);
+  const [showBollingerBands, setShowBollingerBands] = useState(false);
+  const [showRSI, setShowRSI] = useState(false);
+  
+  // Comparison
+  const [compareSymbol, setCompareSymbol] = useState<string | null>(null);
+  
+  // Price levels
+  const [showSupportResistance, setShowSupportResistance] = useState(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery<HistoricalData>({
     queryKey: ["/api/historical", selectedSymbol, selectedTimeframe],
@@ -69,11 +171,28 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
     refetchInterval: 60000,
   });
 
+  // Comparison stock data
+  const { data: compareData } = useQuery<HistoricalData>({
+    queryKey: ["/api/historical", compareSymbol, selectedTimeframe],
+    queryFn: async () => {
+      if (!compareSymbol) return null;
+      const res = await fetch(`/api/historical/${compareSymbol}?timeframe=${selectedTimeframe}`);
+      if (!res.ok) throw new Error("Failed to fetch comparison data");
+      return res.json();
+    },
+    enabled: !!compareSymbol,
+    refetchInterval: 60000,
+  });
+
   useEffect(() => {
     if (onSymbolChange) {
       onSymbolChange(selectedSymbol);
     }
   }, [selectedSymbol, onSymbolChange]);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
 
   const handleSymbolChange = (newSymbol: string) => {
     setSelectedSymbol(newSymbol);
@@ -162,6 +281,122 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
     });
   }
 
+  // Add Technical Indicators
+  if (showSMA20) {
+    const sma20 = calculateSMA(closes, 20);
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: dates,
+      y: sma20,
+      line: { color: "#F59E0B", width: 1.5, dash: "solid" },
+      name: "SMA 20",
+      yaxis: "y2",
+      hovertemplate: "SMA20: %{y:.2f}<extra></extra>",
+    });
+  }
+
+  if (showSMA50) {
+    const sma50 = calculateSMA(closes, 50);
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: dates,
+      y: sma50,
+      line: { color: "#8B5CF6", width: 1.5, dash: "solid" },
+      name: "SMA 50",
+      yaxis: "y2",
+      hovertemplate: "SMA50: %{y:.2f}<extra></extra>",
+    });
+  }
+
+  if (showEMA20) {
+    const ema20 = calculateEMA(closes, 20);
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: dates,
+      y: ema20,
+      line: { color: "#06B6D4", width: 1.5, dash: "dot" },
+      name: "EMA 20",
+      yaxis: "y2",
+      hovertemplate: "EMA20: %{y:.2f}<extra></extra>",
+    });
+  }
+
+  if (showBollingerBands) {
+    const bb = calculateBollingerBands(closes, 20, 2);
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: dates,
+      y: bb.upper,
+      line: { color: "#EC4899", width: 1, dash: "dash" },
+      name: "BB Upper",
+      yaxis: "y2",
+      hovertemplate: "BB Upper: %{y:.2f}<extra></extra>",
+    });
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: dates,
+      y: bb.lower,
+      line: { color: "#EC4899", width: 1, dash: "dash" },
+      name: "BB Lower",
+      yaxis: "y2",
+      fill: "tonexty",
+      fillcolor: "rgba(236, 72, 153, 0.1)",
+      hovertemplate: "BB Lower: %{y:.2f}<extra></extra>",
+    });
+  }
+
+  // Add comparison stock
+  if (compareSymbol && compareData?.data) {
+    const compareDates = compareData.data.map(d => new Date(d.date));
+    const compareCloses = compareData.data.map(d => d.close);
+    const basePrice = compareCloses[0];
+    const normalizedCompare = compareCloses.map(c => (c / basePrice) * closes[0]);
+    
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: compareDates,
+      y: normalizedCompare,
+      line: { color: "#3B82F6", width: 2, dash: "dot" },
+      name: compareSymbol,
+      yaxis: "y2",
+      hovertemplate: `${compareSymbol}: %{y:.2f}<extra></extra>`,
+    });
+  }
+
+  // Add support/resistance levels
+  if (showSupportResistance) {
+    const maxPrice = Math.max(...highs);
+    const minPrice = Math.min(...lows);
+    const avgPrice = (maxPrice + minPrice) / 2;
+    
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: [dates[0], dates[dates.length - 1]],
+      y: [maxPrice, maxPrice],
+      line: { color: "#EF4444", width: 1, dash: "dash" },
+      name: "Resistance",
+      yaxis: "y2",
+      hovertemplate: `Resistance: ${maxPrice.toFixed(2)}<extra></extra>`,
+    });
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: [dates[0], dates[dates.length - 1]],
+      y: [minPrice, minPrice],
+      line: { color: "#10B981", width: 1, dash: "dash" },
+      name: "Support",
+      yaxis: "y2",
+      hovertemplate: `Support: ${minPrice.toFixed(2)}<extra></extra>`,
+    });
+  }
+
   if (showEvents && events.length > 0) {
     const eventColors: { [key: string]: string } = {
       "Corporate": "#A855F7",
@@ -192,6 +427,47 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
     });
   }
 
+  // Calculate chart height based on RSI display
+  const chartHeight = isFullscreen ? "calc(100vh - 200px)" : (showRSI ? "500px" : "400px");
+  const priceYAxisDomain = showRSI ? [0.35, 1] : [0.25, 1];
+  const volumeYAxisDomain = showRSI ? [0.15, 0.3] : [0, 0.2];
+
+  // Add RSI indicator if enabled
+  if (showRSI) {
+    const rsi = calculateRSI(closes, 14);
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: dates,
+      y: rsi,
+      line: { color: "#8B5CF6", width: 1.5 },
+      name: "RSI (14)",
+      yaxis: "y3",
+      hovertemplate: "RSI: %{y:.1f}<extra></extra>",
+    });
+    // Add RSI overbought/oversold lines
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: [dates[0], dates[dates.length - 1]],
+      y: [70, 70],
+      line: { color: "#EF4444", width: 1, dash: "dot" },
+      name: "Overbought",
+      yaxis: "y3",
+      showlegend: false,
+    });
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: [dates[0], dates[dates.length - 1]],
+      y: [30, 30],
+      line: { color: "#10B981", width: 1, dash: "dot" },
+      name: "Oversold",
+      yaxis: "y3",
+      showlegend: false,
+    });
+  }
+
   const layout: any = {
     paper_bgcolor: "transparent",
     plot_bgcolor: "transparent",
@@ -205,20 +481,30 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
       rangeslider: { visible: false },
     },
     yaxis: {
-      domain: [0, 0.2],
+      domain: volumeYAxisDomain,
       gridcolor: "rgba(255,255,255,0.05)",
       linecolor: "rgba(255,255,255,0.1)",
       tickfont: { size: 10 },
       title: { text: "Volume", font: { size: 10 } },
     },
     yaxis2: {
-      domain: [0.25, 1],
+      domain: priceYAxisDomain,
       gridcolor: "rgba(255,255,255,0.05)",
       linecolor: "rgba(255,255,255,0.1)",
       tickfont: { size: 10 },
       tickprefix: "",
       title: { text: "Price", font: { size: 10 } },
     },
+    ...(showRSI && {
+      yaxis3: {
+        domain: [0, 0.12],
+        gridcolor: "rgba(255,255,255,0.05)",
+        linecolor: "rgba(255,255,255,0.1)",
+        tickfont: { size: 10 },
+        title: { text: "RSI", font: { size: 10 } },
+        range: [0, 100],
+      },
+    }),
     showlegend: false,
     hovermode: "x unified",
     dragmode: "zoom",
@@ -231,8 +517,8 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
     responsive: true,
   };
 
-  return (
-    <Card className="w-full bg-card/50 border-primary/20">
+  const chartContent = (
+    <Card className={`w-full bg-card/50 border-primary/20 ${isFullscreen ? 'h-full' : ''}`}>
       <CardHeader className="pb-2">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 flex-wrap">
@@ -261,6 +547,78 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1 text-xs" data-testid="button-indicators">
+                  <Layers className="w-3 h-3" />
+                  Indicators
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="end">
+                <div className="space-y-4">
+                  <h4 className="font-bold text-sm">Technical Indicators</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="sma20" checked={showSMA20} onCheckedChange={(c) => setShowSMA20(!!c)} />
+                      <Label htmlFor="sma20" className="text-sm flex items-center gap-2">
+                        <div className="w-3 h-0.5 bg-amber-500" />
+                        SMA 20
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="sma50" checked={showSMA50} onCheckedChange={(c) => setShowSMA50(!!c)} />
+                      <Label htmlFor="sma50" className="text-sm flex items-center gap-2">
+                        <div className="w-3 h-0.5 bg-purple-500" />
+                        SMA 50
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="ema20" checked={showEMA20} onCheckedChange={(c) => setShowEMA20(!!c)} />
+                      <Label htmlFor="ema20" className="text-sm flex items-center gap-2">
+                        <div className="w-3 h-0.5 bg-cyan-500 border-dashed" />
+                        EMA 20
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="bb" checked={showBollingerBands} onCheckedChange={(c) => setShowBollingerBands(!!c)} />
+                      <Label htmlFor="bb" className="text-sm flex items-center gap-2">
+                        <div className="w-3 h-0.5 bg-pink-500" />
+                        Bollinger Bands
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="rsi" checked={showRSI} onCheckedChange={(c) => setShowRSI(!!c)} />
+                      <Label htmlFor="rsi" className="text-sm flex items-center gap-2">
+                        <div className="w-3 h-0.5 bg-violet-500" />
+                        RSI (14)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="sr" checked={showSupportResistance} onCheckedChange={(c) => setShowSupportResistance(!!c)} />
+                      <Label htmlFor="sr" className="text-sm flex items-center gap-2">
+                        <Target className="w-3 h-3" />
+                        Support/Resistance
+                      </Label>
+                    </div>
+                  </div>
+                  <div className="border-t pt-3">
+                    <h4 className="font-bold text-sm mb-2">Compare With</h4>
+                    <Select value={compareSymbol || "none"} onValueChange={(v) => setCompareSymbol(v === "none" ? null : v)}>
+                      <SelectTrigger className="w-full" data-testid="select-compare">
+                        <SelectValue placeholder="Select stock..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {POPULAR_STOCKS.filter(s => s !== selectedSymbol).map(stock => (
+                          <SelectItem key={stock} value={stock}>{stock}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
             <Button
               variant="ghost"
               size="icon"
@@ -269,6 +627,15 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
               data-testid="button-refresh-chart"
             >
               <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleFullscreen}
+              data-testid="button-fullscreen"
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </Button>
           </div>
         </div>
@@ -366,8 +733,49 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
         )}
       </CardHeader>
 
+      {/* Active Indicators Legend */}
+      {(showSMA20 || showSMA50 || showEMA20 || showBollingerBands || showRSI || compareSymbol) && (
+        <div className="px-4 pb-2 flex flex-wrap gap-2">
+          {showSMA20 && (
+            <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-500/40 bg-amber-500/10">
+              SMA 20
+            </Badge>
+          )}
+          {showSMA50 && (
+            <Badge variant="outline" className="text-[10px] text-purple-500 border-purple-500/40 bg-purple-500/10">
+              SMA 50
+            </Badge>
+          )}
+          {showEMA20 && (
+            <Badge variant="outline" className="text-[10px] text-cyan-500 border-cyan-500/40 bg-cyan-500/10">
+              EMA 20
+            </Badge>
+          )}
+          {showBollingerBands && (
+            <Badge variant="outline" className="text-[10px] text-pink-500 border-pink-500/40 bg-pink-500/10">
+              BB (20,2)
+            </Badge>
+          )}
+          {showRSI && (
+            <Badge variant="outline" className="text-[10px] text-violet-500 border-violet-500/40 bg-violet-500/10">
+              RSI 14
+            </Badge>
+          )}
+          {compareSymbol && (
+            <Badge variant="outline" className="text-[10px] text-blue-500 border-blue-500/40 bg-blue-500/10">
+              vs {compareSymbol}
+            </Badge>
+          )}
+          {showSupportResistance && (
+            <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/40 bg-emerald-500/10">
+              S/R Levels
+            </Badge>
+          )}
+        </div>
+      )}
+
       <CardContent className="p-0">
-        <div className="w-full h-[400px]">
+        <div className="w-full" style={{ height: chartHeight }}>
           <Plot
             data={traces}
             layout={layout}
@@ -379,4 +787,15 @@ export function HistoricalChart({ symbol: initialSymbol = "RELIANCE", onSymbolCh
       </CardContent>
     </Card>
   );
+
+  // Wrap in fullscreen overlay if needed
+  if (isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm p-4 overflow-auto" data-testid="chart-fullscreen">
+        {chartContent}
+      </div>
+    );
+  }
+
+  return chartContent;
 }
