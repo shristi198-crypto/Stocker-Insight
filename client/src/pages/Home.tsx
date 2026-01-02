@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Layout } from "@/components/Layout";
 import { CustomizableDashboard } from "@/components/DashboardWidgets";
 import { HistoricalChart } from "@/components/HistoricalChart";
@@ -10,6 +10,34 @@ import { Link } from "wouter";
 import { useNews } from "@/hooks/use-news";
 import { useQuery } from "@tanstack/react-query";
 import bullBearImage from "@assets/generated_images/bull_and_bear_market_battle.png";
+import bullImage from "@assets/stock_images/bull_statue_stock_ma_e52666b1.jpg";
+import bearImage from "@assets/stock_images/bear_stock_market_re_e13a2200.jpg";
+
+type MarketMood = "bullish" | "bearish" | "neutral";
+
+const moodConfig = {
+  bullish: {
+    image: bullImage,
+    alt: "Bullish Market - Bull Statue",
+    label: "BULLISH",
+    color: "text-emerald-400",
+    bgColor: "bg-emerald-500/20 border-emerald-500/30",
+  },
+  bearish: {
+    image: bearImage,
+    alt: "Bearish Market - Bear",
+    label: "BEARISH",
+    color: "text-red-400",
+    bgColor: "bg-red-500/20 border-red-500/30",
+  },
+  neutral: {
+    image: bullBearImage,
+    alt: "Neutral Market - Bull and Bear Battle",
+    label: "NEUTRAL",
+    color: "text-primary",
+    bgColor: "bg-primary/20 border-primary/30",
+  },
+};
 
 interface FIIDIIData {
   date: string;
@@ -266,23 +294,53 @@ function NewsSummaryCard() {
 }
 
 export default function Home() {
+  const { data: news } = useNews();
+  
+  const marketMood = useMemo<MarketMood>(() => {
+    if (!news || news.length === 0) return "neutral";
+    
+    const bullishCount = news.filter(n => n.sentiment === "bullish").length;
+    const bearishCount = news.filter(n => n.sentiment === "bearish").length;
+    const total = news.length;
+    
+    const bullishRatio = bullishCount / total;
+    const bearishRatio = bearishCount / total;
+    
+    if (bullishRatio > 0.5) return "bullish";
+    if (bearishRatio > 0.5) return "bearish";
+    if (bullishRatio > bearishRatio + 0.15) return "bullish";
+    if (bearishRatio > bullishRatio + 0.15) return "bearish";
+    
+    return "neutral";
+  }, [news]);
+
+  const currentMoodConfig = moodConfig[marketMood];
+
   return (
     <Layout>
       <div className="space-y-12">
-        {/* Hero Section with Bull & Bear Image */}
+        {/* Hero Section with Market Mood Image */}
         <div className="text-center space-y-6 w-full animate-in fade-in zoom-in duration-500 pt-4">
           <h1 className="text-3xl md:text-5xl tracking-tight text-foreground">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-red-500 to-red-400" style={{fontFamily: 'Bebas Neue', textShadow: '0 0 20px rgba(226, 27, 27, 0.8), 0 0 40px rgba(226, 27, 27, 0.5)'}}>
               NEW VISION OF STOCK MARKET WITH STOCKERSS
             </span>
           </h1>
-          <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-lg">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Badge className={`${currentMoodConfig.bgColor} ${currentMoodConfig.color} text-sm px-4 py-1`} data-testid="badge-market-mood">
+              {marketMood === "bullish" && <TrendingUp className="w-4 h-4 mr-2" />}
+              {marketMood === "bearish" && <TrendingDown className="w-4 h-4 mr-2" />}
+              MARKET MOOD: {currentMoodConfig.label}
+            </Badge>
+          </div>
+          <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-lg relative">
             <img 
-              src={bullBearImage} 
-              alt="Bull and Bear Market Battle" 
-              className="w-full max-h-40 md:max-h-56 object-cover"
-              data-testid="img-bull-bear"
+              src={currentMoodConfig.image} 
+              alt={currentMoodConfig.alt} 
+              className="w-full max-h-40 md:max-h-56 object-cover transition-all duration-500"
+              data-testid="img-market-mood"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
           </div>
         </div>
 
