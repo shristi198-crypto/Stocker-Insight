@@ -106,7 +106,7 @@ export default function Minhi() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-5">
                 <div className="flex items-center gap-2 text-sm">
                   <Badge variant="outline" className="text-xs border-primary/40 bg-primary/10">
                     Price
