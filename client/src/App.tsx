@@ -12,6 +12,7 @@ import News from "./pages/News";
 import MarketMonitor from "./pages/MarketMonitor";
 import CommoditiesPage from "./pages/CommoditiesPage";
 import CapStocks from "./pages/CapStocks";
+import Minhi from "./pages/Minhi";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/monitor" component={MarketMonitor} />
       <Route path="/commodities" component={CommoditiesPage} />
       <Route path="/cap-stocks/:type" component={CapStocks} />
+      <Route path="/minhi" component={Minhi} />
       <Route component={NotFound} />
     </Switch>
   );

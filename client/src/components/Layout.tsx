@@ -185,6 +185,9 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
               <Link href="/stocks" className={`text-sm font-medium transition-colors ${location === '/stocks' ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
                 Stocks
               </Link>
+              <Link href="/minhi" className={`text-sm font-medium transition-colors ${location === '/minhi' ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
+                Minhi
+              </Link>
               <Link href="/commodities" className={`text-sm font-medium transition-colors ${location === '/commodities' ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
                 Commodities
               </Link>
@@ -255,6 +258,9 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
               </Link>
               <Link href="/stocks" onClick={() => setMobileMenuOpen(false)} className={`block py-2 px-3 rounded-md text-sm font-medium transition-colors ${location === '/stocks' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-primary/5'}`}>
                 Stocks
+              </Link>
+              <Link href="/minhi" onClick={() => setMobileMenuOpen(false)} className={`block py-2 px-3 rounded-md text-sm font-medium transition-colors ${location === '/minhi' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-primary/5'}`}>
+                Minhi
               </Link>
               <Link href="/commodities" onClick={() => setMobileMenuOpen(false)} className={`block py-2 px-3 rounded-md text-sm font-medium transition-colors ${location === '/commodities' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-primary/5'}`}>
                 Commodities
