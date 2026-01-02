@@ -197,8 +197,8 @@ export default function Minhi() {
                       <div className="lg:col-span-3">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h3 className="font-black text-lg text-foreground">{stock.symbol}</h3>
-                            <p className="text-xs text-muted-foreground truncate max-w-[180px]">{stock.name}</p>
+                            <h3 className="text-lg text-foreground" style={{ fontFamily: 'Calibri, sans-serif' }}>{stock.symbol}</h3>
+                            <p className="text-xs text-muted-foreground truncate max-w-[180px]" style={{ fontFamily: 'Calibri, sans-serif' }}>{stock.name}</p>
                             <Badge variant="outline" className="text-[10px] mt-1 border-secondary/40">
                               {stock.sector}
                             </Badge>
