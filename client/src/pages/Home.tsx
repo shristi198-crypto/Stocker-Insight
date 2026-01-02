@@ -276,11 +276,11 @@ export default function Home() {
               NEW VISION OF STOCK MARKET WITH STOCKERSS
             </span>
           </h1>
-          <div className="w-full max-w-5xl mx-auto overflow-hidden rounded-lg">
+          <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-lg">
             <img 
               src={bullBearImage} 
               alt="Bull and Bear Market Battle" 
-              className="w-full h-auto object-cover"
+              className="w-full max-h-40 md:max-h-56 object-cover"
               data-testid="img-bull-bear"
             />
           </div>
