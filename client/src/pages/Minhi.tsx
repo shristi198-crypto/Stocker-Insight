@@ -1,10 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -17,7 +20,8 @@ import {
   Target,
   Filter,
   AlertCircle,
-  SearchX
+  SearchX,
+  SlidersHorizontal
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -57,6 +61,24 @@ export default function Minhi() {
     queryKey: ["/api/minhi"],
     refetchInterval: 5000,
   });
+
+  const [filters, setFilters] = useState({
+    maxPrice: 150,
+    minGrowth: 30,
+    maxDebt: 0.10,
+    minPromoter: 30,
+  });
+
+  const filteredStocks = useMemo(() => {
+    if (!data?.stocks) return [];
+    return data.stocks.filter(stock => 
+      stock.price <= filters.maxPrice &&
+      stock.threeYearSalesGrowth >= filters.minGrowth &&
+      stock.debtToEquity <= filters.maxDebt &&
+      stock.promoterHolding >= filters.minPromoter &&
+      stock.bookValue > stock.price
+    );
+  }, [data?.stocks, filters]);
 
   const getRecommendationColor = (rec: string) => {
     if (rec.includes("STRONG BUY")) return "bg-emerald-500/20 text-emerald-400 border-emerald-500/40";
@@ -101,41 +123,86 @@ export default function Minhi() {
           <Card className="bg-card/50 border-primary/20 mb-6">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Filter className="w-4 h-4 text-primary" />
-                Selection Criteria
+                <SlidersHorizontal className="w-4 h-4 text-primary" />
+                Customise Selection Criteria
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-5">
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="outline" className="text-xs border-primary/40 bg-primary/10">
-                    Price
-                  </Badge>
-                  <span className="text-muted-foreground">&lt; Rs 150</span>
+                <div className="space-y-2">
+                  <Label className="text-xs flex items-center gap-1" style={{ fontFamily: 'Calibri, sans-serif' }}>
+                    <Badge variant="outline" className="text-[10px] border-primary/40 bg-primary/10">
+                      Price
+                    </Badge>
+                    <span className="text-muted-foreground">&lt; Rs</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    value={filters.maxPrice}
+                    onChange={(e) => setFilters(f => ({ ...f, maxPrice: Number(e.target.value) }))}
+                    className="h-8 text-sm"
+                    style={{ fontFamily: 'Calibri, sans-serif' }}
+                    data-testid="input-filter-price"
+                  />
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="outline" className="text-xs border-green-500/40 bg-green-500/10 text-green-400">
-                    3Y Growth
-                  </Badge>
-                  <span className="text-muted-foreground">&gt; 30%</span>
+                <div className="space-y-2">
+                  <Label className="text-xs flex items-center gap-1" style={{ fontFamily: 'Calibri, sans-serif' }}>
+                    <Badge variant="outline" className="text-[10px] border-green-500/40 bg-green-500/10 text-green-400">
+                      3Y Growth
+                    </Badge>
+                    <span className="text-muted-foreground">&gt; %</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    value={filters.minGrowth}
+                    onChange={(e) => setFilters(f => ({ ...f, minGrowth: Number(e.target.value) }))}
+                    className="h-8 text-sm"
+                    style={{ fontFamily: 'Calibri, sans-serif' }}
+                    data-testid="input-filter-growth"
+                  />
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="outline" className="text-xs border-blue-500/40 bg-blue-500/10 text-blue-400">
-                    Debt/Eq
-                  </Badge>
-                  <span className="text-muted-foreground">&lt; 0.10</span>
+                <div className="space-y-2">
+                  <Label className="text-xs flex items-center gap-1" style={{ fontFamily: 'Calibri, sans-serif' }}>
+                    <Badge variant="outline" className="text-[10px] border-blue-500/40 bg-blue-500/10 text-blue-400">
+                      Debt/Eq
+                    </Badge>
+                    <span className="text-muted-foreground">&lt;</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={filters.maxDebt}
+                    onChange={(e) => setFilters(f => ({ ...f, maxDebt: Number(e.target.value) }))}
+                    className="h-8 text-sm"
+                    style={{ fontFamily: 'Calibri, sans-serif' }}
+                    data-testid="input-filter-debt"
+                  />
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="outline" className="text-xs border-purple-500/40 bg-purple-500/10 text-purple-400">
-                    Book Value
-                  </Badge>
-                  <span className="text-muted-foreground">&gt; Price</span>
+                <div className="space-y-2">
+                  <Label className="text-xs flex items-center gap-1" style={{ fontFamily: 'Calibri, sans-serif' }}>
+                    <Badge variant="outline" className="text-[10px] border-purple-500/40 bg-purple-500/10 text-purple-400">
+                      Book Value
+                    </Badge>
+                  </Label>
+                  <div className="h-8 flex items-center text-sm text-muted-foreground" style={{ fontFamily: 'Calibri, sans-serif' }}>
+                    &gt; Price (Fixed)
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="outline" className="text-xs border-amber-500/40 bg-amber-500/10 text-amber-400">
-                    Promoters
-                  </Badge>
-                  <span className="text-muted-foreground">&gt; 30%</span>
+                <div className="space-y-2">
+                  <Label className="text-xs flex items-center gap-1" style={{ fontFamily: 'Calibri, sans-serif' }}>
+                    <Badge variant="outline" className="text-[10px] border-amber-500/40 bg-amber-500/10 text-amber-400">
+                      Promoters
+                    </Badge>
+                    <span className="text-muted-foreground">&gt; %</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    value={filters.minPromoter}
+                    onChange={(e) => setFilters(f => ({ ...f, minPromoter: Number(e.target.value) }))}
+                    className="h-8 text-sm"
+                    style={{ fontFamily: 'Calibri, sans-serif' }}
+                    data-testid="input-filter-promoter"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -160,7 +227,7 @@ export default function Minhi() {
               </Button>
             </AlertDescription>
           </Alert>
-        ) : !data?.stocks?.length ? (
+        ) : !filteredStocks?.length ? (
           <Card className="bg-card/50 border-primary/20 p-8">
             <div className="flex flex-col items-center justify-center text-center">
               <SearchX className="w-12 h-12 text-muted-foreground mb-4" />
@@ -178,7 +245,7 @@ export default function Minhi() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
-                Found <span className="text-primary font-bold">{data?.count}</span> stocks matching criteria
+                Found <span className="text-primary font-bold">{filteredStocks.length}</span> stocks matching criteria
               </span>
               <span className="text-xs text-muted-foreground">
                 Auto-refresh: 5s
@@ -186,7 +253,7 @@ export default function Minhi() {
             </div>
 
             <div className="grid gap-4">
-              {data?.stocks.map((stock) => (
+              {filteredStocks.map((stock) => (
                 <Card 
                   key={stock.symbol} 
                   className="bg-card/50 border-primary/20 hover-elevate cursor-pointer"
