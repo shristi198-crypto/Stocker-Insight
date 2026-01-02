@@ -145,44 +145,55 @@ function MarketCapStocksWidget() {
   const midCap = stocksData?.midCap || defaultMidCap;
   const largeCap = stocksData?.largeCap || defaultLargeCap;
 
+  const capTypeMap: Record<string, string> = {
+    "Small Cap": "small",
+    "Mid Cap": "mid",
+    "Large Cap": "large"
+  };
+
   const renderStockList = (stocks: CapStock[], capType: string, bgColor: string, textColor: string) => (
-    <Card className="border-2 border-primary/30" data-testid={`card-${capType}-stocks`}>
-      <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
-        <CardTitle className="text-sm font-bold flex items-center gap-2">
-          <Sparkles className={`w-4 h-4 ${textColor}`} />
-          {capType.toUpperCase()} HIGH RETURNS
-        </CardTitle>
-        <Badge variant="outline" className={`text-[10px] ${textColor} border-current bg-current/10`}>
-          {isFetching ? 'Updating...' : 'LIVE'}
-        </Badge>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {stocks.map((stock) => (
-          <div 
-            key={stock.symbol} 
-            className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover-elevate"
-            data-testid={`stock-${capType}-${stock.symbol}`}
-          >
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm truncate">{stock.symbol}</p>
-              <p className="text-xs text-muted-foreground truncate">{stock.name}</p>
-            </div>
-            <div className="text-right flex items-center gap-3">
-              <div>
-                <p className="font-mono text-sm font-bold">{stock.price.toLocaleString('en-IN')}</p>
-                <p className={`text-xs font-mono flex items-center justify-end gap-1 ${stock.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {stock.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                  {stock.change >= 0 ? '+' : ''}{stock.change}%
-                </p>
-              </div>
-              <Badge className={`${bgColor} text-white font-bold text-xs`}>
-                {stock.returns}
-              </Badge>
-            </div>
+    <Link href={`/cap-stocks/${capTypeMap[capType]}`}>
+      <Card className="border-2 border-primary/30 cursor-pointer hover-elevate" data-testid={`card-${capType}-stocks`}>
+        <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <Sparkles className={`w-4 h-4 ${textColor}`} />
+            {capType.toUpperCase()} HIGH RETURNS
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={`text-[10px] ${textColor} border-current bg-current/10`}>
+              {isFetching ? 'Updating...' : 'LIVE'}
+            </Badge>
+            <ArrowRight className={`w-4 h-4 ${textColor}`} />
           </div>
-        ))}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {stocks.map((stock) => (
+            <div 
+              key={stock.symbol} 
+              className="flex items-center justify-between p-2 rounded-md bg-muted/30"
+              data-testid={`stock-${capType}-${stock.symbol}`}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm truncate">{stock.symbol}</p>
+                <p className="text-xs text-muted-foreground truncate">{stock.name}</p>
+              </div>
+              <div className="text-right flex items-center gap-3">
+                <div>
+                  <p className="font-mono text-sm font-bold">{stock.price.toLocaleString('en-IN')}</p>
+                  <p className={`text-xs font-mono flex items-center justify-end gap-1 ${stock.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {stock.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                    {stock.change >= 0 ? '+' : ''}{stock.change}%
+                  </p>
+                </div>
+                <Badge className={`${bgColor} text-white font-bold text-xs`}>
+                  {stock.returns}
+                </Badge>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </Link>
   );
 
   return (
