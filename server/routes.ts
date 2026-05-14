@@ -14,6 +14,148 @@ function getISTTimestamp(): string {
   return formatInTimeZone(new Date(), "Asia/Kolkata", "dd MMM yyyy, hh:mm:ss a 'IST'");
 }
 
+// Server-side cache — serves stale data when NSE returns 403 / rate-limits
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+const nseCache: Record<string, CacheEntry> = {};
+
+function getCached(key: string, ttlMs: number): any | null {
+  const entry = nseCache[key];
+  if (entry && Date.now() - entry.timestamp < ttlMs) return entry.data;
+  return null;
+}
+
+function getStale(key: string): any | null {
+  return nseCache[key]?.data ?? null;
+}
+
+function setCache(key: string, data: any): void {
+  nseCache[key] = { data, timestamp: Date.now() };
+}
+
+// Circuit breaker — opens on 403, waits 12 min before retrying
+let circuitOpenAt = 0;
+const CIRCUIT_RESET_MS = 12 * 60 * 1000;
+
+function isCircuitOpen(): boolean {
+  if (circuitOpenAt === 0) return false;
+  if (Date.now() - circuitOpenAt > CIRCUIT_RESET_MS) {
+    circuitOpenAt = 0; // auto-reset after timeout
+    console.log("[NSE] Circuit breaker CLOSED — retrying NSE");
+    return false;
+  }
+  return true;
+}
+
+function is403(err: any): boolean {
+  return err?.response?.status === 403 || err?.status === 403;
+}
+
+function handleNseError(err: any) {
+  if (is403(err) && circuitOpenAt === 0) {
+    circuitOpenAt = Date.now();
+    console.log("[NSE] Circuit breaker OPEN — pausing NSE calls for 12 min");
+  }
+}
+
+// Fetch a stock index with circuit breaker + stale-on-error fallback
+async function fetchIndexCached(indexName: string, ttlMs = 45000): Promise<any> {
+  const key = `index:${indexName}`;
+  const cached = getCached(key, ttlMs);
+  if (cached) return cached;
+  const stale = getStale(key);
+  if (isCircuitOpen()) return stale; // serve stale, skip NSE
+  try {
+    const data = await nseIndia.getEquityStockIndices(indexName);
+    if (data) setCache(key, data);
+    return data;
+  } catch (err) {
+    handleNseError(err);
+    if (stale) return stale;
+    throw err;
+  }
+}
+
+// Fetch equity details with circuit breaker + stale-on-error fallback
+async function fetchEquityDetailsCached(symbol: string, ttlMs = 60000): Promise<any> {
+  const key = `equity:${symbol}`;
+  const cached = getCached(key, ttlMs);
+  if (cached) return cached;
+  const stale = getStale(key);
+  if (isCircuitOpen()) return stale;
+  try {
+    const data = await nseIndia.getEquityDetails(symbol);
+    if (data) setCache(key, data);
+    return data;
+  } catch (err) {
+    handleNseError(err);
+    if (stale) return stale;
+    throw err;
+  }
+}
+
+// Lookup a stock in the cached NIFTY 50 index data — avoids per-stock equity calls
+function getStockFromNifty50(symbol: string): any | null {
+  const cached = nseCache["index:NIFTY 50"];
+  if (!cached?.data?.data) return null;
+  const stock = cached.data.data.find((s: any) => s.symbol === symbol);
+  if (!stock) return null;
+  return {
+    priceInfo: {
+      lastPrice: stock.lastPrice,
+      change: stock.change,
+      pChange: stock.pChange,
+      open: stock.open,
+      high: stock.dayHigh,
+      low: stock.dayLow,
+      previousClose: stock.previousClose,
+      weekHighLow: { max: stock.yearHigh, min: stock.yearLow },
+    },
+    info: { companyName: stock.meta?.companyName || stock.symbol },
+    metadata: { companyName: stock.meta?.companyName || stock.symbol },
+    _fromNifty50: true,
+  };
+}
+
+// Fetch equity details: try NIFTY 50 cache first, then direct NSE call, then stale fallback
+async function getEquityData(symbol: string, ttlMs = 60000): Promise<any> {
+  const fromIndex = getStockFromNifty50(symbol);
+  if (fromIndex) return fromIndex;
+  return fetchEquityDetailsCached(symbol, ttlMs);
+}
+
+// Scheduled NSE data refresh — runs sequentially every 5 min to avoid rate-limiting
+const NSE_INDICES_TO_FETCH = [
+  "NIFTY 50", "NIFTY BANK", "NIFTY IT", "NIFTY NEXT 50",
+  "NIFTY PHARMA", "NIFTY AUTO", "NIFTY FMCG", "NIFTY METAL", "NIFTY REALTY", "NIFTY ENERGY"
+];
+
+async function runNseRefresh() {
+  if (isCircuitOpen()) {
+    console.log("[NSE] Refresh skipped — circuit open");
+    return;
+  }
+  const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+  let successCount = 0;
+  for (const idx of NSE_INDICES_TO_FETCH) {
+    if (isCircuitOpen()) break; // stop mid-refresh if 403 trips the breaker
+    try {
+      const data = await nseIndia.getEquityStockIndices(idx);
+      if (data) { setCache(`index:${idx}`, data); successCount++; }
+    } catch (err) {
+      handleNseError(err);
+    }
+    await delay(500); // 500ms spacing avoids Akamai bot detection
+  }
+  if (successCount > 0) console.log(`[NSE] Refresh: ${successCount}/${NSE_INDICES_TO_FETCH.length} indices cached`);
+}
+
+// First refresh 6 seconds after startup, then every 5 minutes
+setTimeout(runNseRefresh, 6000);
+setInterval(runNseRefresh, 5 * 60 * 1000);
+
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -30,13 +172,15 @@ export async function registerRoutes(
       const { symbol } = api.analyze.create.input.parse(req.body);
       const upperSymbol = symbol.toUpperCase();
 
-      // Fetch REAL data from NSE India
+      // Fetch REAL data from NSE India (checks NIFTY 50 cache first to avoid 403)
       let nseData: any = null;
       let tradeInfo: any = null;
       
       try {
-        nseData = await nseIndia.getEquityDetails(upperSymbol);
-        tradeInfo = await nseIndia.getEquityTradeInfo(upperSymbol);
+        nseData = await getEquityData(upperSymbol, 60000);
+        if (!nseData?._fromNifty50) {
+          try { tradeInfo = await nseIndia.getEquityTradeInfo(upperSymbol); } catch {}
+        }
       } catch (nseErr) {
         console.log("NSE fetch failed, using AI estimation:", nseErr);
       }
@@ -139,10 +283,11 @@ Use the REAL prices provided. Format in Markdown.`;
 
   app.get("/api/nse/gainers-losers", async (req, res) => {
     try {
-      const data = await nseIndia.getEquityStockIndices("NIFTY 50");
+      const data = await fetchIndexCached("NIFTY 50", 45000);
       
       if (!data || !data.data) {
-        return res.status(500).json({ message: "Failed to fetch NSE data" });
+        // NSE unavailable — return empty structure so UI degrades gracefully
+        return res.json({ gainers: [], losers: [], highVolume: [], lastUpdated: getISTTimestamp(), nseDown: true });
       }
 
       const stocks = data.data.map((stock: any) => ({
@@ -165,10 +310,28 @@ Use the REAL prices provided. Format in Markdown.`;
       const gainers = sorted.filter(s => s.pChange > 0).slice(0, 20);
       const losers = sorted.filter(s => s.pChange < 0).sort((a, b) => a.pChange - b.pChange).slice(0, 20);
 
-      res.json({ gainers, losers, lastUpdated: getISTTimestamp() });
-    } catch (err) {
-      console.error("NSE fetch failed:", err);
-      res.status(500).json({ message: "Failed to fetch NSE data" });
+      // High volume stocks derived from the same NIFTY 50 data
+      const highVolume = [...stocks]
+        .sort((a: any, b: any) => (b.totalTradedVolume || 0) - (a.totalTradedVolume || 0))
+        .slice(0, 5)
+        .map((s: any) => ({
+          symbol: s.symbol,
+          volume: s.totalTradedVolume || 0,
+          volumeFormatted: s.totalTradedVolume >= 1000000
+            ? `${(s.totalTradedVolume / 1000000).toFixed(1)}M`
+            : s.totalTradedVolume >= 1000
+            ? `${(s.totalTradedVolume / 1000).toFixed(1)}K`
+            : String(s.totalTradedVolume || 0),
+          change: s.pChange || 0,
+          changeFormatted: `${(s.pChange || 0) >= 0 ? "+" : ""}${(s.pChange || 0).toFixed(1)}%`,
+          price: s.lastPrice || 0,
+        }));
+
+      res.json({ gainers, losers, highVolume, lastUpdated: getISTTimestamp() });
+    } catch (err: any) {
+      const msg = is403(err) ? "NSE 403 (rate-limited)" : String(err?.message || err);
+      console.log("[NSE] gainers-losers error:", msg);
+      res.json({ gainers: [], losers: [], highVolume: [], lastUpdated: getISTTimestamp(), nseDown: true });
     }
   });
 
@@ -180,7 +343,7 @@ Use the REAL prices provided. Format in Markdown.`;
 
       for (const indexName of indices) {
         try {
-          const data = await nseIndia.getEquityStockIndices(indexName);
+          const data = await fetchIndexCached(indexName, 45000);
           if (data && data.metadata) {
             indexData.push({
               name: indexName,
@@ -319,7 +482,7 @@ Use the REAL prices provided. Format in Markdown.`;
 
       for (const symbol of symbols) {
         try {
-          const data = await nseIndia.getEquityDetails(symbol);
+          const data = await getEquityData(symbol);
           const priceInfo = data?.priceInfo || {};
           const companyName = data?.info?.companyName || data?.metadata?.companyName || symbol;
           
@@ -373,7 +536,7 @@ Use the REAL prices provided. Format in Markdown.`;
         const results = [];
         for (const symbol of symbols) {
           try {
-            const data = await nseIndia.getEquityDetails(symbol);
+            const data = await getEquityData(symbol);
             const priceInfo = data?.priceInfo || {};
             const companyName = data?.info?.companyName || data?.metadata?.companyName || symbol;
             
@@ -498,7 +661,7 @@ Example format:
       const stocksWithRealPrices = await Promise.all(
         minhiCandidates.map(async (stock) => {
           try {
-            const nseData = await nseIndia.getEquityDetails(stock.symbol);
+            const nseData = await getEquityData(stock.symbol);
             const priceInfo = nseData?.priceInfo || {};
             const lastPrice = priceInfo.lastPrice || priceInfo.close || 0;
             const change = priceInfo.change || 0;
@@ -573,6 +736,91 @@ Example format:
     } catch (err) {
       console.error("Minhi stocks fetch failed:", err);
       res.status(500).json({ message: "Failed to fetch penny stocks" });
+    }
+  });
+
+  // Watchlist prices - fetch real NSE data for multiple symbols
+  app.get("/api/nse/watchlist", async (req, res) => {
+    const symbolsParam = req.query.symbols as string;
+    if (!symbolsParam) return res.json({ stocks: [], lastUpdated: getISTTimestamp() });
+
+    const symbols = symbolsParam.split(",").map((s: string) => s.trim().toUpperCase()).filter(Boolean).slice(0, 15);
+
+    const stocks = await Promise.all(symbols.map(async (symbol: string) => {
+      try {
+        const data = await getEquityData(symbol);
+        const priceInfo = data?.priceInfo || {};
+        return {
+          symbol,
+          price: priceInfo.lastPrice || 0,
+          change: priceInfo.change || 0,
+          pChange: priceInfo.pChange || 0,
+          companyName: data?.info?.companyName || data?.metadata?.companyName || symbol,
+          isLive: true
+        };
+      } catch {
+        return { symbol, price: 0, change: 0, pChange: 0, companyName: symbol, isLive: false };
+      }
+    }));
+
+    res.json({ stocks, lastUpdated: getISTTimestamp() });
+  });
+
+  // Sector performance - real NSE sector indices
+  app.get("/api/nse/sector-performance", async (req, res) => {
+    const sectorIndices = [
+      { key: "NIFTY IT", label: "IT" },
+      { key: "NIFTY BANK", label: "Banking" },
+      { key: "NIFTY PHARMA", label: "Pharma" },
+      { key: "NIFTY AUTO", label: "Auto" },
+      { key: "NIFTY FMCG", label: "FMCG" },
+      { key: "NIFTY METAL", label: "Metal" },
+      { key: "NIFTY REALTY", label: "Realty" },
+      { key: "NIFTY ENERGY", label: "Energy" },
+    ];
+
+    const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+    const sectorData = [];
+    for (const { key, label } of sectorIndices) {
+      try {
+        const data = await fetchIndexCached(key, 60000);
+        const pChange = data?.metadata?.percChange ?? data?.metadata?.pChange ?? 0;
+        sectorData.push({ name: label, change: parseFloat(pChange.toFixed(2)), isLive: true });
+      } catch {
+        sectorData.push({ name: label, change: 0, isLive: false });
+      }
+      await delay(150); // avoid hammering NSE session
+    }
+
+    res.json({ sectors: sectorData, lastUpdated: getISTTimestamp() });
+  });
+
+  // High volume stocks from NIFTY 50 - sorted by traded volume
+  app.get("/api/nse/high-volume", async (req, res) => {
+    try {
+      const data = await fetchIndexCached("NIFTY 50", 45000);
+      if (!data?.data) return res.status(500).json({ message: "Failed to fetch NIFTY 50 data" });
+
+      const stocks = data.data
+        .map((stock: any) => ({
+          symbol: stock.symbol,
+          volume: stock.totalTradedVolume || 0,
+          volumeFormatted: stock.totalTradedVolume >= 1000000
+            ? `${(stock.totalTradedVolume / 1000000).toFixed(1)}M`
+            : stock.totalTradedVolume >= 1000
+            ? `${(stock.totalTradedVolume / 1000).toFixed(1)}K`
+            : String(stock.totalTradedVolume),
+          change: stock.pChange || 0,
+          changeFormatted: `${stock.pChange >= 0 ? "+" : ""}${(stock.pChange || 0).toFixed(1)}%`,
+          price: stock.lastPrice || 0,
+        }))
+        .sort((a: any, b: any) => b.volume - a.volume)
+        .slice(0, 5);
+
+      res.json({ stocks, lastUpdated: getISTTimestamp() });
+    } catch (err) {
+      console.error("High volume fetch failed:", err);
+      res.status(500).json({ message: "Failed to fetch high volume data" });
     }
   });
 

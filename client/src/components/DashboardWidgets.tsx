@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,10 @@ import {
   Activity,
   Settings,
   Eye,
-  EyeOff
+  EyeOff,
+  Loader2,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import {
   Dialog,
@@ -26,21 +30,39 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
-interface Stock {
+interface StockQuote {
   symbol: string;
-  price: string;
+  price: number;
   change: number;
+  pChange: number;
+  companyName: string;
+  isLive: boolean;
+}
+
+interface GainerLoser {
+  symbol: string;
+  companyName: string;
+  lastPrice: number;
+  change: number;
+  pChange: number;
+  totalTradedVolume: number;
 }
 
 interface SectorData {
   name: string;
   change: number;
+  isLive: boolean;
 }
 
 interface IndexData {
   name: string;
-  value: string;
+  lastPrice: number;
   change: number;
+  pChange: number;
+  open: number;
+  high: number;
+  low: number;
+  previousClose: number;
 }
 
 const STORAGE_KEY = "stocker-dashboard-config";
@@ -93,27 +115,25 @@ export function WatchlistWidget({ watchlist, onAdd, onRemove }: {
   onRemove: (symbol: string) => void;
 }) {
   const [newSymbol, setNewSymbol] = useState("");
-  const [prices, setPrices] = useState<Record<string, Stock>>({});
 
-  useEffect(() => {
-    const generatePrices = () => {
-      const newPrices: Record<string, Stock> = {};
-      watchlist.forEach(symbol => {
-        const basePrice = Math.random() * 3000 + 500;
-        const change = (Math.random() - 0.5) * 5;
-        newPrices[symbol] = {
-          symbol,
-          price: basePrice.toFixed(2),
-          change: parseFloat(change.toFixed(2))
-        };
-      });
-      setPrices(newPrices);
-    };
-    
-    generatePrices();
-    const interval = setInterval(generatePrices, 5000);
-    return () => clearInterval(interval);
-  }, [watchlist]);
+  const symbolsParam = watchlist.join(",");
+
+  const { data, isLoading, isFetching } = useQuery<{ stocks: StockQuote[]; lastUpdated: string }>({
+    queryKey: ["/api/nse/watchlist", symbolsParam],
+    queryFn: async () => {
+      const res = await fetch(`/api/nse/watchlist?symbols=${encodeURIComponent(symbolsParam)}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch watchlist");
+      return res.json();
+    },
+    enabled: watchlist.length > 0,
+    refetchInterval: 15000,
+    staleTime: 10000,
+  });
+
+  const stockMap: Record<string, StockQuote> = {};
+  if (data?.stocks) {
+    data.stocks.forEach(s => { stockMap[s.symbol] = s; });
+  }
 
   const handleAdd = () => {
     const symbol = newSymbol.trim().toUpperCase();
@@ -129,6 +149,7 @@ export function WatchlistWidget({ watchlist, onAdd, onRemove }: {
         <CardTitle className="text-sm font-bold flex items-center gap-2">
           <Star className="w-4 h-4 text-primary" />
           MY WATCHLIST
+          {isFetching && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground ml-auto" />}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -149,10 +170,14 @@ export function WatchlistWidget({ watchlist, onAdd, onRemove }: {
           <p className="text-xs text-muted-foreground text-center py-4">
             Add stocks to your watchlist
           </p>
+        ) : isLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          </div>
         ) : (
           <div className="space-y-2">
             {watchlist.map((symbol) => {
-              const stock = prices[symbol];
+              const stock = stockMap[symbol];
               return (
                 <div 
                   key={symbol} 
@@ -161,19 +186,22 @@ export function WatchlistWidget({ watchlist, onAdd, onRemove }: {
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-sm">{symbol}</span>
-                    {stock && (
+                    {stock && stock.price > 0 && (
                       <span className="text-xs text-muted-foreground font-mono">
-                        ₹{stock.price}
+                        ₹{stock.price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                       </span>
+                    )}
+                    {stock && !stock.isLive && (
+                      <WifiOff className="w-3 h-3 text-muted-foreground opacity-50" />
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {stock && (
+                    {stock && stock.price > 0 && (
                       <Badge 
-                        variant={stock.change >= 0 ? "default" : "destructive"}
+                        variant={stock.pChange >= 0 ? "default" : "destructive"}
                         className="text-[10px] font-mono"
                       >
-                        {stock.change >= 0 ? "+" : ""}{stock.change}%
+                        {stock.pChange >= 0 ? "+" : ""}{stock.pChange.toFixed(2)}%
                       </Badge>
                     )}
                     <Button 
@@ -191,33 +219,27 @@ export function WatchlistWidget({ watchlist, onAdd, onRemove }: {
             })}
           </div>
         )}
+        {data?.lastUpdated && (
+          <p className="text-[10px] text-muted-foreground text-right">
+            <Wifi className="w-2.5 h-2.5 inline mr-1 text-emerald-400" />
+            {data.lastUpdated}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
 }
 
 export function TopMoversWidget({ type }: { type: "gainers" | "losers" }) {
-  const [stocks, setStocks] = useState<Stock[]>([]);
+  const { data, isLoading, isFetching } = useQuery<{ gainers: GainerLoser[]; losers: GainerLoser[]; lastUpdated: string }>({
+    queryKey: ["/api/nse/gainers-losers"],
+    refetchInterval: 15000,
+    staleTime: 10000,
+  });
 
-  useEffect(() => {
-    const symbols = type === "gainers" 
-      ? ["ADANIPORTS", "TATASTEEL", "HINDALCO", "COALINDIA", "ONGC"]
-      : ["TECHM", "WIPRO", "HCLTECH", "INFY", "TCS"];
-    
-    const generateData = () => {
-      setStocks(symbols.map(symbol => ({
-        symbol,
-        price: (Math.random() * 2000 + 200).toFixed(2),
-        change: type === "gainers" 
-          ? parseFloat((Math.random() * 5 + 1).toFixed(2))
-          : parseFloat((-Math.random() * 5 - 0.5).toFixed(2))
-      })));
-    };
-    
-    generateData();
-    const interval = setInterval(generateData, 5000);
-    return () => clearInterval(interval);
-  }, [type]);
+  const stocks = type === "gainers"
+    ? (data?.gainers || []).slice(0, 5)
+    : (data?.losers || []).slice(0, 5);
 
   const Icon = type === "gainers" ? TrendingUp : TrendingDown;
   const color = type === "gainers" ? "text-emerald-400" : "text-red-400";
@@ -228,51 +250,56 @@ export function TopMoversWidget({ type }: { type: "gainers" | "losers" }) {
         <CardTitle className={`text-sm font-bold flex items-center gap-2 ${color}`}>
           <Icon className="w-4 h-4" />
           TOP {type.toUpperCase()}
+          {isFetching && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground ml-auto" />}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          {stocks.map((stock, index) => (
-            <div 
-              key={stock.symbol} 
-              className="flex items-center justify-between"
-              data-testid={`${type}-item-${index}`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground w-4">{index + 1}</span>
-                <span className="font-mono text-sm font-medium">{stock.symbol}</span>
-              </div>
-              <Badge 
-                variant={type === "gainers" ? "default" : "destructive"}
-                className="text-[10px] font-mono"
+        {isLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {stocks.map((stock, index) => (
+              <div 
+                key={stock.symbol} 
+                className="flex items-center justify-between"
+                data-testid={`${type}-item-${index}`}
               >
-                {stock.change >= 0 ? "+" : ""}{stock.change}%
-              </Badge>
-            </div>
-          ))}
-        </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-4">{index + 1}</span>
+                  <div>
+                    <p className="font-mono text-sm font-medium">{stock.symbol}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">₹{stock.lastPrice?.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</p>
+                  </div>
+                </div>
+                <Badge 
+                  variant={type === "gainers" ? "default" : "destructive"}
+                  className="text-[10px] font-mono"
+                >
+                  {stock.pChange >= 0 ? "+" : ""}{stock.pChange?.toFixed(2)}%
+                </Badge>
+              </div>
+            ))}
+            {data?.lastUpdated && (
+              <p className="text-[10px] text-muted-foreground text-right pt-1">
+                <Wifi className="w-2.5 h-2.5 inline mr-1 text-emerald-400" />
+                Live NSE
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
 export function SectorPerformanceWidget() {
-  const [sectors, setSectors] = useState<SectorData[]>([]);
-
-  useEffect(() => {
-    const sectorNames = ["IT", "Banking", "Pharma", "Auto", "Energy", "FMCG", "Metal", "Realty"];
-    
-    const generateData = () => {
-      setSectors(sectorNames.map(name => ({
-        name,
-        change: parseFloat((Math.random() * 6 - 3).toFixed(2))
-      })));
-    };
-    
-    generateData();
-    const interval = setInterval(generateData, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const { data, isLoading, isFetching } = useQuery<{ sectors: SectorData[]; lastUpdated: string }>({
+    queryKey: ["/api/nse/sector-performance"],
+    refetchInterval: 30000,
+    staleTime: 25000,
+  });
 
   return (
     <Card className="border-2 border-primary/30" data-testid="widget-sectors">
@@ -280,45 +307,56 @@ export function SectorPerformanceWidget() {
         <CardTitle className="text-sm font-bold flex items-center gap-2">
           <PieChart className="w-4 h-4 text-primary" />
           SECTOR PERFORMANCE
+          {isFetching && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground ml-auto" />}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-2">
-          {sectors.map((sector) => (
-            <div 
-              key={sector.name} 
-              className="flex items-center justify-between p-2 rounded-md bg-muted/30"
-              data-testid={`sector-${sector.name}`}
-            >
-              <span className="text-xs font-medium">{sector.name}</span>
-              <span className={`text-xs font-mono font-bold ${sector.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {sector.change >= 0 ? "+" : ""}{sector.change}%
-              </span>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              {(data?.sectors || []).map((sector) => (
+                <div 
+                  key={sector.name} 
+                  className="flex items-center justify-between p-2 rounded-md bg-muted/30"
+                  data-testid={`sector-${sector.name}`}
+                >
+                  <div className="flex items-center gap-1">
+                    {sector.isLive ? (
+                      <Wifi className="w-2.5 h-2.5 text-emerald-400 flex-shrink-0" />
+                    ) : (
+                      <WifiOff className="w-2.5 h-2.5 text-muted-foreground flex-shrink-0" />
+                    )}
+                    <span className="text-xs font-medium">{sector.name}</span>
+                  </div>
+                  <span className={`text-xs font-mono font-bold ${sector.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {sector.change >= 0 ? "+" : ""}{sector.change}%
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            {data?.lastUpdated && (
+              <p className="text-[10px] text-muted-foreground text-right pt-2">
+                <Wifi className="w-2.5 h-2.5 inline mr-1 text-emerald-400" />
+                {data.lastUpdated}
+              </p>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );
 }
 
 export function MarketIndicesWidget() {
-  const [indices, setIndices] = useState<IndexData[]>([]);
-
-  useEffect(() => {
-    const generateData = () => {
-      setIndices([
-        { name: "SENSEX", value: (72500 + Math.random() * 500).toFixed(0), change: parseFloat((Math.random() * 2 - 1).toFixed(2)) },
-        { name: "NIFTY 50", value: (22000 + Math.random() * 100).toFixed(0), change: parseFloat((Math.random() * 2 - 1).toFixed(2)) },
-        { name: "NIFTY BANK", value: (48000 + Math.random() * 200).toFixed(0), change: parseFloat((Math.random() * 2.5 - 1.25).toFixed(2)) },
-        { name: "NIFTY IT", value: (35000 + Math.random() * 300).toFixed(0), change: parseFloat((Math.random() * 3 - 1.5).toFixed(2)) },
-      ]);
-    };
-    
-    generateData();
-    const interval = setInterval(generateData, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const { data, isLoading, isFetching } = useQuery<{ indices: IndexData[]; lastUpdated: string }>({
+    queryKey: ["/api/nse/indices"],
+    refetchInterval: 10000,
+    staleTime: 8000,
+  });
 
   return (
     <Card className="border-2 border-primary/30" data-testid="widget-indices">
@@ -326,29 +364,46 @@ export function MarketIndicesWidget() {
         <CardTitle className="text-sm font-bold flex items-center gap-2">
           <Activity className="w-4 h-4 text-primary" />
           MARKET INDICES
+          {isFetching && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground ml-auto" />}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {indices.map((index) => (
-            <div 
-              key={index.name} 
-              className="flex items-center justify-between"
-              data-testid={`index-${index.name.replace(/\s/g, '-')}`}
-            >
-              <div>
-                <p className="text-xs font-medium">{index.name}</p>
-                <p className="text-lg font-black font-mono">{parseFloat(index.value).toLocaleString('en-IN')}</p>
-              </div>
-              <Badge 
-                variant={index.change >= 0 ? "default" : "destructive"}
-                className="text-xs font-mono"
+        {isLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {(data?.indices || []).map((index) => (
+              <div 
+                key={index.name} 
+                className="flex items-center justify-between"
+                data-testid={`index-${index.name.replace(/\s/g, '-')}`}
               >
-                {index.change >= 0 ? "+" : ""}{index.change}%
-              </Badge>
-            </div>
-          ))}
-        </div>
+                <div>
+                  <p className="text-xs font-medium flex items-center gap-1">
+                    <Wifi className="w-2.5 h-2.5 text-emerald-400" />
+                    {index.name}
+                  </p>
+                  <p className="text-lg font-black font-mono">
+                    {index.lastPrice?.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <Badge 
+                  variant={index.pChange >= 0 ? "default" : "destructive"}
+                  className="text-xs font-mono"
+                >
+                  {index.pChange >= 0 ? "+" : ""}{index.pChange?.toFixed(2)}%
+                </Badge>
+              </div>
+            ))}
+            {data?.lastUpdated && (
+              <p className="text-[10px] text-muted-foreground text-right">
+                {data.lastUpdated}
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
