@@ -4,10 +4,99 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import OpenAI from "openai";
-import { NseIndia } from "stock-nse-india";
+import YahooFinance from "yahoo-finance2";
 import { formatInTimeZone } from "date-fns-tz";
 
-const nseIndia = new NseIndia();
+const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
+
+// ─── Yahoo Finance Data Layer ────────────────────────────────────────────────
+// NSE.com is Akamai-blocked on Replit cloud IPs. Yahoo Finance provides the
+// same data via .NS suffix for NSE stocks and ^ prefix for indices.
+
+const INDEX_YAHOO: Record<string, string> = {
+  "NIFTY 50":    "^NSEI",
+  "NIFTY BANK":  "^NSEBANK",
+  "NIFTY IT":    "^CNXIT",
+  "NIFTY NEXT 50": "^NSEMDCP50",
+  "NIFTY PHARMA": "^CNXPHARMA",
+  "NIFTY AUTO":  "^CNXAUTO",
+  "NIFTY FMCG":  "^CNXFMCG",
+  "NIFTY METAL": "^CNXMETAL",
+  "NIFTY REALTY":"^CNXREALTY",
+  "NIFTY ENERGY":"^CNXENERGY",
+};
+
+const NIFTY50_SYMBOLS = [
+  "RELIANCE","TCS","HDFCBANK","INFY","ICICIBANK","BHARTIARTL","HINDUNILVR",
+  "ITC","SBIN","LT","KOTAKBANK","BAJFINANCE","AXISBANK","ASIANPAINT",
+  "MARUTI","TITAN","WIPRO","SUNPHARMA","ULTRACEMCO","POWERGRID",
+  "NTPC","COALINDIA","ONGC","TATAMOTORS","JSWSTEEL","TATASTEEL",
+  "ADANIPORTS","CIPLA","DRREDDY","EICHERMOT","HCLTECH","HEROMOTOCO",
+  "HINDALCO","M&M","NESTLEIND","SHREECEM","TATACONSUM","TECHM",
+  "BAJAJFINSV","BRITANNIA","DIVISLAB","GRASIM","INDUSINDBK","SBILIFE",
+  "HDFCLIFE","BPCL","APOLLOHOSP","BAJAJ-AUTO","UPL","ADANIENT",
+];
+
+// Convert Yahoo Finance quote → NSE-style equity details (priceInfo / info / metadata)
+function toEquityDetails(q: any): any {
+  return {
+    priceInfo: {
+      lastPrice:     q.regularMarketPrice     ?? 0,
+      change:        q.regularMarketChange    ?? 0,
+      pChange:       q.regularMarketChangePercent ?? 0,
+      open:          q.regularMarketOpen      ?? 0,
+      high:          q.regularMarketDayHigh   ?? 0,
+      low:           q.regularMarketDayLow    ?? 0,
+      previousClose: q.regularMarketPreviousClose ?? 0,
+      weekHighLow: {
+        max: q.fiftyTwoWeekHigh ?? 0,
+        min: q.fiftyTwoWeekLow  ?? 0,
+      },
+      intraDayHighLow: {
+        max: q.regularMarketDayHigh ?? 0,
+        min: q.regularMarketDayLow  ?? 0,
+      },
+    },
+    info:     { companyName: q.shortName || q.longName || "" },
+    metadata: { companyName: q.shortName || q.longName || "", industry: q.industry || q.sector || "N/A" },
+  };
+}
+
+// Convert Yahoo Finance quote → NSE-style index stock entry (data.data[] element)
+function toIndexStockEntry(symbol: string, q: any): any {
+  const vol = q.regularMarketVolume ?? 0;
+  const price = q.regularMarketPrice ?? 0;
+  return {
+    symbol,
+    meta: { companyName: q.shortName || q.longName || symbol },
+    lastPrice:         price,
+    change:            q.regularMarketChange ?? 0,
+    pChange:           q.regularMarketChangePercent ?? 0,
+    open:              q.regularMarketOpen ?? 0,
+    dayHigh:           q.regularMarketDayHigh ?? 0,
+    dayLow:            q.regularMarketDayLow ?? 0,
+    previousClose:     q.regularMarketPreviousClose ?? 0,
+    totalTradedVolume: vol,
+    totalTradedValue:  vol * price,
+    yearHigh:          q.fiftyTwoWeekHigh ?? 0,
+    yearLow:           q.fiftyTwoWeekLow ?? 0,
+  };
+}
+
+// Convert Yahoo Finance index quote → NSE-style metadata
+function toIndexMetadata(q: any): any {
+  return {
+    last:          q.regularMarketPrice ?? 0,
+    change:        q.regularMarketChange ?? 0,
+    percChange:    q.regularMarketChangePercent ?? 0,
+    open:          q.regularMarketOpen ?? 0,
+    high:          q.regularMarketDayHigh ?? 0,
+    low:           q.regularMarketDayLow ?? 0,
+    previousClose: q.regularMarketPreviousClose ?? 0,
+  };
+}
+
+// ─── Server Cache ────────────────────────────────────────────────────────────
 
 // Helper to get current IST timestamp
 function getISTTimestamp(): string {
@@ -35,126 +124,99 @@ function setCache(key: string, data: any): void {
   nseCache[key] = { data, timestamp: Date.now() };
 }
 
-// Circuit breaker — opens on 403, waits 12 min before retrying
-let circuitOpenAt = 0;
-const CIRCUIT_RESET_MS = 12 * 60 * 1000;
+// ─── Yahoo Finance Fetch Helpers ─────────────────────────────────────────────
 
-function isCircuitOpen(): boolean {
-  if (circuitOpenAt === 0) return false;
-  if (Date.now() - circuitOpenAt > CIRCUIT_RESET_MS) {
-    circuitOpenAt = 0; // auto-reset after timeout
-    console.log("[NSE] Circuit breaker CLOSED — retrying NSE");
-    return false;
-  }
-  return true;
-}
+const YF_OPTS = { validateResult: false } as const;
 
-function is403(err: any): boolean {
-  return err?.response?.status === 403 || err?.status === 403;
-}
-
-function handleNseError(err: any) {
-  if (is403(err) && circuitOpenAt === 0) {
-    circuitOpenAt = Date.now();
-    console.log("[NSE] Circuit breaker OPEN — pausing NSE calls for 12 min");
-  }
-}
-
-// Fetch a stock index with circuit breaker + stale-on-error fallback
-async function fetchIndexCached(indexName: string, ttlMs = 45000): Promise<any> {
+// Fetch index + its constituents (NIFTY 50 fetches all 50 stocks in one bulk call)
+async function fetchIndexCached(indexName: string, ttlMs = 60000): Promise<any> {
   const key = `index:${indexName}`;
   const cached = getCached(key, ttlMs);
   if (cached) return cached;
-  const stale = getStale(key);
-  if (isCircuitOpen()) return stale; // serve stale, skip NSE
+
+  const yahooSym = INDEX_YAHOO[indexName];
+  if (!yahooSym) return getStale(key);
+
   try {
-    const data = await nseIndia.getEquityStockIndices(indexName);
-    if (data) setCache(key, data);
-    return data;
-  } catch (err) {
-    handleNseError(err);
-    if (stale) return stale;
-    throw err;
+    if (indexName === "NIFTY 50") {
+      // Bulk-fetch all 50 constituents + index in parallel
+      const stockSyms = NIFTY50_SYMBOLS.map(s => `${s}.NS`);
+      const [stockQuotes, indexQuote] = await Promise.all([
+        yahooFinance.quote(stockSyms, {}, YF_OPTS),
+        yahooFinance.quote(yahooSym, {}, YF_OPTS),
+      ]);
+      const arr = Array.isArray(stockQuotes) ? stockQuotes : [stockQuotes];
+      const stockData = arr.map((q: any) => {
+        const sym = (q.symbol || "").replace(/\.NS$/i, "");
+        // Cache each stock individually so getEquityData() can reuse it
+        setCache(`equity:${sym}`, toEquityDetails(q));
+        return toIndexStockEntry(sym, q);
+      });
+      const idxQ = Array.isArray(indexQuote) ? indexQuote[0] : indexQuote;
+      const data = { data: stockData, metadata: toIndexMetadata(idxQ) };
+      setCache(key, data);
+      return data;
+    } else {
+      const q = await yahooFinance.quote(yahooSym, {}, YF_OPTS);
+      const quote = Array.isArray(q) ? q[0] : q;
+      const data = { data: [], metadata: toIndexMetadata(quote) };
+      setCache(key, data);
+      return data;
+    }
+  } catch (err: any) {
+    console.log(`[Yahoo] fetchIndex ${indexName}:`, err?.message || err);
+    return getStale(key);
   }
 }
 
-// Fetch equity details with circuit breaker + stale-on-error fallback
+// Fetch single equity — uses cached data from bulk NIFTY 50 fetch if available
 async function fetchEquityDetailsCached(symbol: string, ttlMs = 60000): Promise<any> {
   const key = `equity:${symbol}`;
   const cached = getCached(key, ttlMs);
   if (cached) return cached;
-  const stale = getStale(key);
-  if (isCircuitOpen()) return stale;
   try {
-    const data = await nseIndia.getEquityDetails(symbol);
-    if (data) setCache(key, data);
+    const q = await yahooFinance.quote(`${symbol}.NS`, {}, YF_OPTS);
+    const quote = Array.isArray(q) ? q[0] : q;
+    const data = toEquityDetails(quote);
+    setCache(key, data);
     return data;
-  } catch (err) {
-    handleNseError(err);
-    if (stale) return stale;
-    throw err;
+  } catch (err: any) {
+    console.log(`[Yahoo] fetchEquity ${symbol}:`, err?.message || err);
+    return getStale(key);
   }
 }
 
-// Lookup a stock in the cached NIFTY 50 index data — avoids per-stock equity calls
-function getStockFromNifty50(symbol: string): any | null {
-  const cached = nseCache["index:NIFTY 50"];
-  if (!cached?.data?.data) return null;
-  const stock = cached.data.data.find((s: any) => s.symbol === symbol);
-  if (!stock) return null;
-  return {
-    priceInfo: {
-      lastPrice: stock.lastPrice,
-      change: stock.change,
-      pChange: stock.pChange,
-      open: stock.open,
-      high: stock.dayHigh,
-      low: stock.dayLow,
-      previousClose: stock.previousClose,
-      weekHighLow: { max: stock.yearHigh, min: stock.yearLow },
-    },
-    info: { companyName: stock.meta?.companyName || stock.symbol },
-    metadata: { companyName: stock.meta?.companyName || stock.symbol },
-    _fromNifty50: true,
-  };
-}
-
-// Fetch equity details: try NIFTY 50 cache first, then direct NSE call, then stale fallback
+// Get equity data — checks cache first (populated by bulk NIFTY 50 fetch)
 async function getEquityData(symbol: string, ttlMs = 60000): Promise<any> {
-  const fromIndex = getStockFromNifty50(symbol);
-  if (fromIndex) return fromIndex;
   return fetchEquityDetailsCached(symbol, ttlMs);
 }
 
-// Scheduled NSE data refresh — runs sequentially every 5 min to avoid rate-limiting
-const NSE_INDICES_TO_FETCH = [
-  "NIFTY 50", "NIFTY BANK", "NIFTY IT", "NIFTY NEXT 50",
-  "NIFTY PHARMA", "NIFTY AUTO", "NIFTY FMCG", "NIFTY METAL", "NIFTY REALTY", "NIFTY ENERGY"
+// Scheduled refresh — fetches NIFTY 50 bulk + all sector indices every 5 min
+const SECTOR_INDICES = [
+  "NIFTY BANK","NIFTY IT","NIFTY PHARMA","NIFTY AUTO",
+  "NIFTY FMCG","NIFTY METAL","NIFTY REALTY","NIFTY ENERGY","NIFTY NEXT 50",
 ];
 
-async function runNseRefresh() {
-  if (isCircuitOpen()) {
-    console.log("[NSE] Refresh skipped — circuit open");
-    return;
+async function runRefresh() {
+  try {
+    // NIFTY 50 bulk fetch — also caches each stock individually
+    await fetchIndexCached("NIFTY 50", 0);
+    // Sector indices — simple index quotes
+    await Promise.all(SECTOR_INDICES.map(idx => fetchIndexCached(idx, 0).catch(() => {})));
+    console.log("[Yahoo] Refresh complete");
+  } catch (err: any) {
+    console.log("[Yahoo] Refresh error:", err?.message || err);
   }
-  const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
-  let successCount = 0;
-  for (const idx of NSE_INDICES_TO_FETCH) {
-    if (isCircuitOpen()) break; // stop mid-refresh if 403 trips the breaker
-    try {
-      const data = await nseIndia.getEquityStockIndices(idx);
-      if (data) { setCache(`index:${idx}`, data); successCount++; }
-    } catch (err) {
-      handleNseError(err);
-    }
-    await delay(500); // 500ms spacing avoids Akamai bot detection
-  }
-  if (successCount > 0) console.log(`[NSE] Refresh: ${successCount}/${NSE_INDICES_TO_FETCH.length} indices cached`);
 }
 
-// First refresh 6 seconds after startup, then every 5 minutes
-setTimeout(runNseRefresh, 6000);
-setInterval(runNseRefresh, 5 * 60 * 1000);
+// First refresh after 4 s, then every 5 min
+setTimeout(runRefresh, 4000);
+setInterval(runRefresh, 5 * 60 * 1000);
+
+// is403 kept for error responses in route handlers
+function is403(err: any): boolean {
+  return err?.response?.status === 403 || err?.status === 403;
+}
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -174,15 +236,10 @@ export async function registerRoutes(
 
       // Fetch REAL data from NSE India (checks NIFTY 50 cache first to avoid 403)
       let nseData: any = null;
-      let tradeInfo: any = null;
-      
       try {
         nseData = await getEquityData(upperSymbol, 60000);
-        if (!nseData?._fromNifty50) {
-          try { tradeInfo = await nseIndia.getEquityTradeInfo(upperSymbol); } catch {}
-        }
       } catch (nseErr) {
-        console.log("NSE fetch failed, using AI estimation:", nseErr);
+        console.log("Yahoo Finance fetch failed, using AI estimation:", nseErr);
       }
 
       // Extract real data if available
@@ -487,15 +544,15 @@ Use the REAL prices provided. Format in Markdown.`;
           const companyName = data?.info?.companyName || data?.metadata?.companyName || symbol;
           
           const currentPrice = priceInfo.lastPrice || 0;
-          const weekLow = priceInfo.weekHighLow?.min || currentPrice * 0.7;
-          const returns = ((currentPrice - weekLow) / weekLow * 100).toFixed(0);
+          const weekLow = priceInfo.weekHighLow?.min || (currentPrice > 0 ? currentPrice * 0.7 : 1);
+          const returnsVal = currentPrice > 0 && weekLow > 0 ? ((currentPrice - weekLow) / weekLow * 100).toFixed(0) : "0";
           
           stocks.push({
             symbol,
             name: companyName,
             price: currentPrice,
             change: priceInfo.pChange || 0,
-            returns: `+${returns}%`,
+            returns: `+${returnsVal}%`,
             dayHigh: priceInfo.intraDayHighLow?.max || priceInfo.high || currentPrice * 1.02,
             dayLow: priceInfo.intraDayHighLow?.min || priceInfo.low || currentPrice * 0.98,
             weekHigh: priceInfo.weekHighLow?.max || currentPrice * 1.3,
@@ -540,17 +597,16 @@ Use the REAL prices provided. Format in Markdown.`;
             const priceInfo = data?.priceInfo || {};
             const companyName = data?.info?.companyName || data?.metadata?.companyName || symbol;
             
-            // Calculate YTD returns (simulated based on 52W performance)
             const currentPrice = priceInfo.lastPrice || 0;
-            const weekLow = priceInfo.weekHighLow?.min || currentPrice * 0.7;
-            const returns = ((currentPrice - weekLow) / weekLow * 100).toFixed(0);
+            const weekLow = priceInfo.weekHighLow?.min || (currentPrice > 0 ? currentPrice * 0.7 : 1);
+            const returnsVal = currentPrice > 0 && weekLow > 0 ? ((currentPrice - weekLow) / weekLow * 100).toFixed(0) : "0";
             
             results.push({
               symbol,
               name: companyName.length > 15 ? companyName.substring(0, 15) : companyName,
               price: currentPrice,
               change: priceInfo.pChange || 0,
-              returns: `+${returns}%`
+              returns: `+${returnsVal}%`
             });
           } catch (err) {
             // Fallback data

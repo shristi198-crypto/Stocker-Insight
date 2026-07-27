@@ -1,0 +1,1 @@
+- [Yahoo Finance data layer](yahoo-finance-layer.md) — NSE.com 403-blocked from Replit cloud IPs; replaced with yahoo-finance2 v3 (class instantiation required).
